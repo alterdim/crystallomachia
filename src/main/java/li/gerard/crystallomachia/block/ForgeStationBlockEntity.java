@@ -1,0 +1,87 @@
+package li.gerard.crystallomachia.block;
+
+import java.util.List;
+import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
+
+import com.lowdragmc.lowdraglib2.gui.factory.BlockUIMenuType;
+import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
+import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+
+import li.gerard.crystallomachia.crystallomachia;
+import li.gerard.crystallomachia.golem.GolemCapability;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.state.BlockState;
+
+public class ForgeStationBlockEntity extends AbstractWorkstationBlockEntity {
+    public static final int FIRST_INPUT_SLOT = 2;
+    public static final int SECOND_INPUT_SLOT = 3;
+    public static final int OUTPUT_SLOT = 4;
+    private static final Map<GolemCapability, Integer> REQUIREMENTS = Map.of(GolemCapability.HEAT, 2, GolemCapability.HANDWORK, 2);
+
+    private static final List<ForgeRecipe> RECIPES = List.of(
+            new ForgeRecipe(Items.IRON_INGOT, Items.STICK, Items.IRON_SWORD, 200),
+            new ForgeRecipe(Items.GOLD_INGOT, Items.STICK, Items.GOLDEN_SWORD, 200),
+            new ForgeRecipe(Items.DIAMOND, Items.STICK, Items.DIAMOND_SWORD, 400));
+
+    public ForgeStationBlockEntity(BlockPos pos, BlockState state) {
+        super(crystallomachia.FORGE_STATION_BLOCK_ENTITY.get(), pos, state, 2, 3);
+    }
+
+    @Override
+    public Map<GolemCapability, Integer> requirements() {
+        return REQUIREMENTS;
+    }
+
+    @Override
+    protected void serverTick(ServerLevel level) {
+        ForgeRecipe recipe = workSpeed() <= 0 ? null : findRecipe(getStack(FIRST_INPUT_SLOT), getStack(SECOND_INPUT_SLOT));
+        if (recipe == null) {
+            resetProgress();
+            return;
+        }
+        ItemStack result = new ItemStack(recipe.result());
+        if (!canOutput(OUTPUT_SLOT, result)) {
+            resetProgress();
+            return;
+        }
+        if (advanceProgress(recipe.duration())) {
+            consume(FIRST_INPUT_SLOT, 1);
+            consume(SECOND_INPUT_SLOT, 1);
+            addOutput(OUTPUT_SLOT, result);
+        }
+    }
+
+    private static @Nullable ForgeRecipe findRecipe(ItemStack first, ItemStack second) {
+        if (first.isEmpty() || second.isEmpty()) {
+            return null;
+        }
+        for (ForgeRecipe recipe : RECIPES) {
+            if (recipe.matches(first, second) || recipe.matches(second, first)) {
+                return recipe;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public ModularUI createUI(BlockUIMenuType.BlockUIHolder holder) {
+        return new AbstractWorkstationUI<>(this) {
+            @Override
+            protected UIElement createMachineArea() {
+                return row(4).addChildren(slot(FIRST_INPUT_SLOT), slot(SECOND_INPUT_SLOT), progressArrow(), outputSlot(OUTPUT_SLOT));
+            }
+        }.build(holder.player);
+    }
+
+    private record ForgeRecipe(Item first, Item second, Item result, int duration) {
+        boolean matches(ItemStack a, ItemStack b) {
+            return a.is(this.first) && b.is(this.second);
+        }
+    }
+}
