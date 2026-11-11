@@ -1,6 +1,6 @@
 package li.gerard.crystallomachia.block;
 
-import java.util.Map;
+import java.util.List;
 
 import com.lowdragmc.lowdraglib2.gui.factory.BlockUIMenuType;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
@@ -8,6 +8,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 
 import li.gerard.crystallomachia.crystallomachia;
 import li.gerard.crystallomachia.golem.GolemCapability;
+import li.gerard.crystallomachia.golem.GolemRole;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
@@ -21,17 +22,12 @@ import net.minecraft.world.level.block.state.BlockState;
 public class GolemFurnaceBlockEntity extends AbstractWorkstationBlockEntity {
     public static final int INPUT_SLOT = 1;
     public static final int OUTPUT_SLOT = 2;
-    private static final Map<GolemCapability, Integer> REQUIREMENTS = Map.of(GolemCapability.HEAT, 1);
+    private static final List<GolemRole> GOLEM_ROLES = List.of(GolemRole.of(GolemCapability.HEAT, 1));
 
     private final RecipeManager.CachedCheck<SingleRecipeInput, SmeltingRecipe> recipeCheck = RecipeManager.createCheck(RecipeType.SMELTING);
 
     public GolemFurnaceBlockEntity(BlockPos pos, BlockState state) {
-        super(crystallomachia.GOLEM_FURNACE_BLOCK_ENTITY.get(), pos, state, 1, 2);
-    }
-
-    @Override
-    public Map<GolemCapability, Integer> requirements() {
-        return REQUIREMENTS;
+        super(crystallomachia.GOLEM_FURNACE_BLOCK_ENTITY.get(), pos, state, GOLEM_ROLES, 2);
     }
 
     @Override

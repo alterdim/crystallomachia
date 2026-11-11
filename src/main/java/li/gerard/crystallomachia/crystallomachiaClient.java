@@ -1,6 +1,9 @@
 package li.gerard.crystallomachia;
 
+import li.gerard.crystallomachia.client.ClientCapabilityTooltip;
+import li.gerard.crystallomachia.golem.CapabilityTooltip;
 import net.minecraft.client.Minecraft;
+import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModContainer;
@@ -20,6 +23,11 @@ public class crystallomachiaClient {
         // The config screen is accessed by going to the Mods screen > clicking on your mod > clicking on config.
         // Do not forget to add translations for your config options to the en_us.json file.
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+    }
+
+    @SubscribeEvent
+    static void registerTooltipComponents(RegisterClientTooltipComponentFactoriesEvent event) {
+        event.register(CapabilityTooltip.class, ClientCapabilityTooltip::new);
     }
 
     @SubscribeEvent

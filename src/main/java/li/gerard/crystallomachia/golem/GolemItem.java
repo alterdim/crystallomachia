@@ -1,14 +1,15 @@
 package li.gerard.crystallomachia.golem;
 
-import java.util.function.Consumer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 import li.gerard.crystallomachia.crystallomachia;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.TooltipDisplay;
 
 public class GolemItem extends Item {
     public GolemItem(Item.Properties properties) {
@@ -26,14 +27,15 @@ public class GolemItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
+    public Optional<TooltipComponent> getTooltipImage(ItemStack stack) {
         GolemData data = getData(stack);
+        List<CapabilityTooltip.Line> lines = new ArrayList<>();
         for (GolemCapability capability : GolemCapability.values()) {
             int level = data.level(capability);
             if (level > 0) {
-                builder.accept(Component.translatable("tooltip.crystallomachia.capability", capability.displayName(), level)
-                        .withStyle(ChatFormatting.GRAY));
+                lines.add(new CapabilityTooltip.Line(capability, Component.literal(Integer.toString(level)).withStyle(ChatFormatting.GRAY)));
             }
         }
+        return lines.isEmpty() ? Optional.empty() : Optional.of(new CapabilityTooltip(lines));
     }
 }

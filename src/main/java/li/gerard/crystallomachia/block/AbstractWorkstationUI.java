@@ -2,7 +2,6 @@ package li.gerard.crystallomachia.block;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import com.lowdragmc.lowdraglib2.gui.slot.ItemResourceHandlerSlot;
 import com.lowdragmc.lowdraglib2.gui.sync.bindings.impl.SupplierDataSource;
@@ -21,10 +20,11 @@ import com.lowdragmc.lowdraglib2.gui.ui.style.StylesheetManager;
 
 import dev.vfyjxf.taffy.style.AlignItems;
 import dev.vfyjxf.taffy.style.FlexDirection;
+import li.gerard.crystallomachia.golem.CapabilityTooltip;
 import li.gerard.crystallomachia.golem.GolemCapability;
+import li.gerard.crystallomachia.golem.GolemRole;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.player.Player;
 
 public abstract class AbstractWorkstationUI<T extends AbstractWorkstationBlockEntity> {
@@ -42,7 +42,7 @@ public abstract class AbstractWorkstationUI<T extends AbstractWorkstationBlockEn
         root.addChildren(
                 new Label().setText(this.workstation.getBlockState().getBlock().getName()),
                 body,
-                new Label().bindDataSource(SupplierDataSource.of(this::requirementsText)),
+                createRequirements(),
                 createSpeedIndicator(),
                 new InventorySlots());
         root.addClass("panel_bg");
@@ -73,9 +73,23 @@ public abstract class AbstractWorkstationUI<T extends AbstractWorkstationBlockEn
     protected UIElement createGolemSlots() {
         UIElement golems = column(2);
         for (int slot = 0; slot < this.workstation.golemSlots(); slot++) {
-            golems.addChild(slot(slot));
+            int golemSlot = slot;
+            UIElement element = slot(slot);
+            element.addEventListener(UIEvents.HOVER_TOOLTIPS, event -> onGolemSlotTooltip(event, golemSlot));
+            golems.addChild(element);
         }
         return golems;
+    }
+
+    private void onGolemSlotTooltip(UIEvent event, int slot) {
+        GolemRole role = this.workstation.golemRole(slot);
+        List<CapabilityTooltip.Line> lines = new ArrayList<>();
+        for (GolemCapability capability : role.capabilities()) {
+            lines.add(new CapabilityTooltip.Line(capability, Component.literal(Integer.toString(role.required(capability)))));
+        }
+        Component title = Component.translatable("gui.crystallomachia.golem_slot.requires").withStyle(ChatFormatting.GRAY);
+        HoverTooltips existing = event.hoverTooltips == null ? HoverTooltips.empty() : event.hoverTooltips;
+        event.hoverTooltips = existing.append(title, new CapabilityTooltip(lines));
     }
 
     protected UIElement createSpeedIndicator() {
@@ -99,27 +113,38 @@ public abstract class AbstractWorkstationUI<T extends AbstractWorkstationBlockEn
         if (!this.workstation.meetsRequirements()) {
             lines.add(Component.translatable("gui.crystallomachia.speed_bonus.unmet").withStyle(ChatFormatting.RED));
         }
-        for (Map.Entry<GolemCapability, Integer> requirement : this.workstation.requirements().entrySet()) {
-            int level = this.workstation.capabilityLevel(requirement.getKey());
-            int bonus = Math.max(0, level - requirement.getValue()) * 100;
-            lines.add(Component.translatable("gui.crystallomachia.speed_bonus.detail",
-                    requirement.getKey().displayName(), level, requirement.getValue(), bonus).withStyle(ChatFormatting.GRAY));
+        List<CapabilityTooltip.Line> details = new ArrayList<>();
+        for (int slot = 0; slot < this.workstation.golemSlots(); slot++) {
+            GolemRole role = this.workstation.golemRole(slot);
+            for (GolemCapability capability : role.capabilities()) {
+                int required = role.required(capability);
+                int level = this.workstation.golem(slot).level(capability);
+                int bonus = Math.max(0, level - required) * 100;
+                details.add(new CapabilityTooltip.Line(capability,
+                        Component.translatable("gui.crystallomachia.speed_bonus.detail", level, required, bonus).withStyle(ChatFormatting.GRAY)));
+            }
         }
-        event.hoverTooltips = HoverTooltips.create(lines.toArray());
+        event.hoverTooltips = HoverTooltips.create(lines.toArray()).append(new CapabilityTooltip(details));
     }
 
-    private Component requirementsText() {
-        MutableComponent text = Component.empty();
-        boolean first = true;
-        for (Map.Entry<GolemCapability, Integer> requirement : this.workstation.requirements().entrySet()) {
-            int level = this.workstation.capabilityLevel(requirement.getKey());
-            if (!first) {
-                text.append(", ");
+    protected UIElement createRequirements() {
+        UIElement requirements = column(1);
+        for (int slot = 0; slot < this.workstation.golemSlots(); slot++) {
+            int golemSlot = slot;
+            for (GolemCapability capability : this.workstation.golemRole(slot).capabilities()) {
+                UIElement icon = new UIElement().layout(layout -> layout.width(GolemCapability.ICON_SIZE).height(GolemCapability.ICON_SIZE))
+                        .style(style -> style.backgroundTexture(SpriteTexture.of(capability.icon().toString())));
+                UIElement label = new Label().bindDataSource(SupplierDataSource.of(() -> requirementText(golemSlot, capability)));
+                requirements.addChild(row(3).addChildren(icon, label));
             }
-            text.append(Component.translatable("gui.crystallomachia.requirement", requirement.getKey().displayName(), level, requirement.getValue())
-                    .withStyle(level >= requirement.getValue() ? ChatFormatting.DARK_GREEN : ChatFormatting.DARK_RED));
-            first = false;
         }
-        return text;
+        return requirements;
+    }
+
+    private Component requirementText(int slot, GolemCapability capability) {
+        int required = this.workstation.golemRole(slot).required(capability);
+        int level = this.workstation.golem(slot).level(capability);
+        return Component.translatable("gui.crystallomachia.requirement", level, required)
+                .withStyle(level >= required ? ChatFormatting.DARK_GREEN : ChatFormatting.DARK_RED);
     }
 }

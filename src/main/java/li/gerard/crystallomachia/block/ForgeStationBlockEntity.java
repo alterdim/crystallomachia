@@ -1,7 +1,6 @@
 package li.gerard.crystallomachia.block;
 
 import java.util.List;
-import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
@@ -11,6 +10,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 
 import li.gerard.crystallomachia.crystallomachia;
 import li.gerard.crystallomachia.golem.GolemCapability;
+import li.gerard.crystallomachia.golem.GolemRole;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
@@ -22,7 +22,9 @@ public class ForgeStationBlockEntity extends AbstractWorkstationBlockEntity {
     public static final int FIRST_INPUT_SLOT = 2;
     public static final int SECOND_INPUT_SLOT = 3;
     public static final int OUTPUT_SLOT = 4;
-    private static final Map<GolemCapability, Integer> REQUIREMENTS = Map.of(GolemCapability.HEAT, 2, GolemCapability.HANDWORK, 2);
+    private static final List<GolemRole> GOLEM_ROLES = List.of(
+            GolemRole.of(GolemCapability.HEAT, 2),
+            GolemRole.of(GolemCapability.HANDWORK, 2));
 
     private static final List<ForgeRecipe> RECIPES = List.of(
             new ForgeRecipe(Items.IRON_INGOT, Items.STICK, Items.IRON_SWORD, 200),
@@ -30,12 +32,7 @@ public class ForgeStationBlockEntity extends AbstractWorkstationBlockEntity {
             new ForgeRecipe(Items.DIAMOND, Items.STICK, Items.DIAMOND_SWORD, 400));
 
     public ForgeStationBlockEntity(BlockPos pos, BlockState state) {
-        super(crystallomachia.FORGE_STATION_BLOCK_ENTITY.get(), pos, state, 2, 3);
-    }
-
-    @Override
-    public Map<GolemCapability, Integer> requirements() {
-        return REQUIREMENTS;
+        super(crystallomachia.FORGE_STATION_BLOCK_ENTITY.get(), pos, state, GOLEM_ROLES, 3);
     }
 
     @Override

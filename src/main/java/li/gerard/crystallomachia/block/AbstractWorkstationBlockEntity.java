@@ -1,6 +1,6 @@
 package li.gerard.crystallomachia.block;
 
-import java.util.Map;
+import java.util.List;
 
 import com.lowdragmc.lowdraglib2.gui.factory.BlockUIMenuType;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
@@ -10,9 +10,9 @@ import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBloc
 import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
 import com.lowdragmc.lowdraglib2.syncdata.storage.IManagedStorage;
 
-import li.gerard.crystallomachia.golem.GolemCapability;
 import li.gerard.crystallomachia.golem.GolemData;
 import li.gerard.crystallomachia.golem.GolemItem;
+import li.gerard.crystallomachia.golem.GolemRole;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
@@ -24,6 +24,7 @@ import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
 
 public abstract class AbstractWorkstationBlockEntity extends BlockEntity implements ISyncPersistRPCBlockEntity {
+    protected final List<GolemRole> golemRoles;
     protected final int golemSlots;
 
     private final FieldManagedStorage syncStorage = new FieldManagedStorage(this);
@@ -40,9 +41,10 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
     @DescSynced
     protected int maxProgress;
 
-    protected AbstractWorkstationBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, int golemSlots, int otherSlots) {
+    protected AbstractWorkstationBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, List<GolemRole> golemRoles, int otherSlots) {
         super(type, pos, state);
-        this.golemSlots = golemSlots;
+        this.golemRoles = List.copyOf(golemRoles);
+        this.golemSlots = this.golemRoles.size();
         this.inventory = new ItemStacksResourceHandler(golemSlots + otherSlots) {
             @Override
             public boolean isValid(int index, ItemResource resource) {
@@ -65,7 +67,9 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
         return slot >= this.golemSlots || resource.getItem() instanceof GolemItem;
     }
 
-    public abstract Map<GolemCapability, Integer> requirements();
+    public GolemRole golemRole(int slot) {
+        return this.golemRoles.get(slot);
+    }
 
     public abstract ModularUI createUI(BlockUIMenuType.BlockUIHolder holder);
 
@@ -87,17 +91,9 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
         return GolemItem.getData(getStack(slot));
     }
 
-    public int capabilityLevel(GolemCapability capability) {
-        int level = 0;
-        for (int slot = 0; slot < this.golemSlots; slot++) {
-            level += golem(slot).level(capability);
-        }
-        return level;
-    }
-
     public boolean meetsRequirements() {
-        for (Map.Entry<GolemCapability, Integer> requirement : requirements().entrySet()) {
-            if (capabilityLevel(requirement.getKey()) < requirement.getValue()) {
+        for (int slot = 0; slot < this.golemSlots; slot++) {
+            if (!golemRole(slot).isMetBy(golem(slot))) {
                 return false;
             }
         }
@@ -109,8 +105,8 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
             return 0;
         }
         int speed = 1;
-        for (Map.Entry<GolemCapability, Integer> requirement : requirements().entrySet()) {
-            speed += capabilityLevel(requirement.getKey()) - requirement.getValue();
+        for (int slot = 0; slot < this.golemSlots; slot++) {
+            speed += golemRole(slot).surplus(golem(slot));
         }
         return speed;
     }
