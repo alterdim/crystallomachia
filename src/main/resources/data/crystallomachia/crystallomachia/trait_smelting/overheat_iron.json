@@ -1,0 +1,6 @@
+{
+  "trait": "overheat",
+  "input": ["minecraft:raw_iron", "minecraft:iron_ore", "minecraft:deepslate_iron_ore"],
+  "result": "crystallomachia:burntmetal_ingot",
+  "work": 200
+}

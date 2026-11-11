@@ -13,6 +13,8 @@ import li.gerard.crystallomachia.block.GolemAssemblerBlockEntity;
 import java.util.EnumMap;
 import java.util.List;
 import li.gerard.crystallomachia.golem.GolemParts;
+import li.gerard.crystallomachia.recipe.ForgingRecipe;
+import li.gerard.crystallomachia.recipe.TraitSmeltingRecipe;
 import net.minecraft.core.Holder;
 import li.gerard.crystallomachia.golem.GolemMaterial;
 import net.minecraft.resources.ResourceKey;
@@ -89,6 +91,8 @@ public class crystallomachia {
 
     public static final DeferredItem<GolemItem> GOLEM_ITEM =ITEMS.registerItem("golem", GolemItem::new);
 
+    public static final DeferredItem<Item> BURNTMETAL_INGOT = ITEMS.registerSimpleItem("burntmetal_ingot");
+
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, MODID);
 
     public static final DeferredBlock<GolemFurnaceBlock> GOLEM_FURNACE = BLOCKS.registerBlock("golem_furnace", GolemFurnaceBlock::new,
@@ -125,6 +129,7 @@ public class crystallomachia {
                 output.accept(GOLEM_FURNACE_ITEM.get());
                 output.accept(FORGE_STATION_ITEM.get());
                 output.accept(GOLEM_ASSEMBLER_ITEM.get());
+                output.accept(BURNTMETAL_INGOT.get());
                 parameters.holders().lookup(GolemMaterial.REGISTRY_KEY).ifPresent(materials -> materials.listElements().forEach(material -> {
                     output.accept(GOLEM_HEAD.get().create(material));
                     output.accept(GOLEM_TORSO.get().create(material));
@@ -160,8 +165,11 @@ public class crystallomachia {
         // Register the Deferred Register to the mod event bus so items get registered
         ITEMS.register(modEventBus);
         DATA_COMPONENTS.register(modEventBus);
-        modEventBus.addListener((NewDatapackRegistryEvent event) ->
-                event.worldRegistry(GolemMaterial.REGISTRY_KEY, GolemMaterial.CODEC, GolemMaterial.CODEC));
+        modEventBus.addListener((NewDatapackRegistryEvent event) -> {
+            event.worldRegistry(GolemMaterial.REGISTRY_KEY, GolemMaterial.CODEC, GolemMaterial.CODEC);
+            event.worldRegistry(ForgingRecipe.REGISTRY_KEY, ForgingRecipe.CODEC, ForgingRecipe.CODEC);
+            event.worldRegistry(TraitSmeltingRecipe.REGISTRY_KEY, TraitSmeltingRecipe.CODEC, TraitSmeltingRecipe.CODEC);
+        });
         BLOCK_ENTITY_TYPES.register(modEventBus);
         // Register the Deferred Register to the mod event bus so tabs get registered
         CREATIVE_MODE_TABS.register(modEventBus);

@@ -1,5 +1,7 @@
 {
   "color": "#C87533",
   "capabilities": { "heat": 2, "handwork": 1, "precision": 1 },
-  "texture": "crystallomachia:textures/golem/copper.png"
+  "texture": "crystallomachia:textures/golem/copper.png",
+  "traits": { "torso": ["overheat"] },
+  "speed": 1.5
 }

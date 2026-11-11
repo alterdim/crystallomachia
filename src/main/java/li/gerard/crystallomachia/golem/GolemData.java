@@ -1,9 +1,16 @@
 package li.gerard.crystallomachia.golem;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import com.lowdragmc.lowdraglib2.syncdata.accessor.direct.CustomDirectAccessor;
 import com.mojang.serialization.Codec;
@@ -13,11 +20,14 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
-public record GolemData(Map<GolemCapability, Integer> capabilities, long appearanceSeed) {
+public record GolemData(Map<GolemCapability, Integer> capabilities, List<GolemTrait> traits, float speed, long appearanceSeed) {
+    public static final float DEFAULT_SPEED = 1.0f;
     public static final GolemData EMPTY = new GolemData(Map.of(), 0L);
 
     public static final Codec<GolemData> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.unboundedMap(GolemCapability.CODEC, Codec.INT).fieldOf("capabilities").forGetter(GolemData::capabilities),
+            GolemTrait.CODEC.listOf().optionalFieldOf("traits", List.of()).forGetter(GolemData::traits),
+            Codec.FLOAT.optionalFieldOf("speed", DEFAULT_SPEED).forGetter(GolemData::speed),
             Codec.LONG.optionalFieldOf("appearance_seed", 0L).forGetter(GolemData::appearanceSeed)
     ).apply(instance, GolemData::new));
 
@@ -25,6 +35,8 @@ public record GolemData(Map<GolemCapability, Integer> capabilities, long appeara
             ByteBufCodecs.<ByteBuf, GolemCapability, Integer, Map<GolemCapability, Integer>>map(
                     HashMap::new, GolemCapability.STREAM_CODEC, ByteBufCodecs.VAR_INT),
             GolemData::capabilities,
+            GolemTrait.STREAM_CODEC.apply(ByteBufCodecs.list()), GolemData::traits,
+            ByteBufCodecs.FLOAT, GolemData::speed,
             ByteBufCodecs.VAR_LONG, GolemData::appearanceSeed,
             GolemData::new);
 
@@ -41,6 +53,29 @@ public record GolemData(Map<GolemCapability, Integer> capabilities, long appeara
             }
         });
         capabilities = Collections.unmodifiableMap(copy);
+        Set<GolemTrait> distinct = EnumSet.noneOf(GolemTrait.class);
+        distinct.addAll(traits);
+        traits = List.copyOf(distinct);
+    }
+
+    public GolemData(Map<GolemCapability, Integer> capabilities, long appearanceSeed) {
+        this(capabilities, List.of(), DEFAULT_SPEED, appearanceSeed);
+    }
+
+    public static GolemData combine(List<GolemData> contributions, long appearanceSeed) {
+        Map<GolemCapability, Integer> capabilities = new EnumMap<>(GolemCapability.class);
+        List<GolemTrait> traits = new ArrayList<>();
+        float speed = 0f;
+        for (GolemData contribution : contributions) {
+            contribution.capabilities().forEach((capability, level) -> capabilities.merge(capability, level, Integer::sum));
+            traits.addAll(contribution.traits());
+            speed += contribution.speed();
+        }
+        return new GolemData(capabilities, traits, contributions.isEmpty() ? DEFAULT_SPEED : speed / contributions.size(), appearanceSeed);
+    }
+
+    public static String formatSpeed(float speed) {
+        return new DecimalFormat("0.##", DecimalFormatSymbols.getInstance(Locale.ROOT)).format(speed);
     }
 
     public int level(GolemCapability capability) {
@@ -51,7 +86,11 @@ public record GolemData(Map<GolemCapability, Integer> capabilities, long appeara
         return level(capability) >= minLevel;
     }
 
+    public boolean hasTrait(GolemTrait trait) {
+        return this.traits.contains(trait);
+    }
+
     public boolean isEmpty() {
-        return this.capabilities.isEmpty();
+        return this.capabilities.isEmpty() && this.traits.isEmpty();
     }
 }

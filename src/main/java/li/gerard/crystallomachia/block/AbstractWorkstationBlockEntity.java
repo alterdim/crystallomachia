@@ -17,6 +17,7 @@ import li.gerard.crystallomachia.golem.GolemCapability;
 import li.gerard.crystallomachia.golem.GolemData;
 import li.gerard.crystallomachia.golem.GolemItem;
 import li.gerard.crystallomachia.golem.GolemRole;
+import li.gerard.crystallomachia.golem.GolemTrait;
 import li.gerard.crystallomachia.golem.WorkEffect;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.BlockPos;
@@ -43,11 +44,11 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
 
     @Persisted
     @DescSynced
-    protected int progress;
+    protected float progress;
 
     @Persisted
     @DescSynced
-    protected int maxProgress;
+    protected float maxProgress;
 
     protected AbstractWorkstationBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, List<GolemRole> golemRoles, int otherSlots) {
         super(type, pos, state);
@@ -80,6 +81,22 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
     }
 
     public abstract GolemAnchor golemAnchor(int slot);
+
+    public List<GolemTrait> supportedTraits() {
+        return List.of();
+    }
+
+    public boolean hasActiveTrait(GolemTrait trait) {
+        if (!supportedTraits().contains(trait)) {
+            return false;
+        }
+        for (int slot = 0; slot < this.golemSlots; slot++) {
+            if (golem(slot).hasTrait(trait)) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     public boolean isWorking() {
         return this.progress > 0;
@@ -148,27 +165,23 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
         return true;
     }
 
-    public int workSpeed() {
+    public float workSpeed() {
         if (!meetsRequirements()) {
-            return 0;
+            return 0f;
         }
-        int speed = 1;
+        float speed = 0f;
         for (int slot = 0; slot < this.golemSlots; slot++) {
-            speed += golemRole(slot).surplus(golem(slot));
+            speed += golem(slot).speed();
         }
         return speed;
     }
 
-    public int speedBonusPercent() {
-        return Math.max(0, workSpeed() - 1) * 100;
-    }
-
     public float progressFraction() {
-        return this.maxProgress <= 0 ? 0f : Math.min(1f, (float) this.progress / this.maxProgress);
+        return this.maxProgress <= 0 ? 0f : Math.min(1f, this.progress / this.maxProgress);
     }
 
-    protected boolean advanceProgress(int duration) {
-        this.maxProgress = duration;
+    protected boolean advanceProgress(float work) {
+        this.maxProgress = work;
         this.progress += workSpeed();
         setChanged();
         if (this.progress >= this.maxProgress) {

@@ -22,7 +22,9 @@ import dev.vfyjxf.taffy.style.AlignItems;
 import dev.vfyjxf.taffy.style.FlexDirection;
 import li.gerard.crystallomachia.golem.CapabilityTooltip;
 import li.gerard.crystallomachia.golem.GolemCapability;
+import li.gerard.crystallomachia.golem.GolemData;
 import li.gerard.crystallomachia.golem.GolemRole;
+import li.gerard.crystallomachia.golem.GolemTrait;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
@@ -95,38 +97,42 @@ public abstract class AbstractWorkstationUI<T extends AbstractWorkstationBlockEn
     protected UIElement createSpeedIndicator() {
         UIElement icon = new UIElement().layout(layout -> layout.width(16).height(16))
                 .style(style -> style.backgroundTexture(SpriteTexture.of("crystallomachia:sprites/speed.png")));
-        UIElement label = new Label().bindDataSource(SupplierDataSource.of(this::speedBonusText));
+        UIElement label = new Label().bindDataSource(SupplierDataSource.of(this::speedText));
         UIElement indicator = row(2).addChildren(icon, label);
         icon.addEventListener(UIEvents.HOVER_TOOLTIPS, this::onSpeedTooltip);
         label.addEventListener(UIEvents.HOVER_TOOLTIPS, this::onSpeedTooltip);
         indicator.addEventListener(UIEvents.HOVER_TOOLTIPS, this::onSpeedTooltip);
+        for (GolemTrait trait : this.workstation.supportedTraits()) {
+            UIElement traitIcon = new UIElement().layout(layout -> layout.width(GolemCapability.ICON_SIZE).height(GolemCapability.ICON_SIZE))
+                    .style(style -> style.backgroundTexture(SpriteTexture.of(trait.icon().toString())));
+            traitIcon.addEventListener(UIEvents.HOVER_TOOLTIPS, event -> event.hoverTooltips = HoverTooltips.create(
+                    trait.displayName().copy().withStyle(ChatFormatting.GOLD),
+                    trait.description().copy().withStyle(ChatFormatting.GRAY)));
+            traitIcon.setDisplay(this.workstation.hasActiveTrait(trait));
+            indicator.addChild(traitIcon);
+            indicator.addEventListener(UIEvents.TICK, event -> traitIcon.setDisplay(this.workstation.hasActiveTrait(trait)));
+        }
         return indicator;
     }
 
-    private Component speedBonusText() {
-        return Component.translatable("gui.crystallomachia.speed_bonus", this.workstation.speedBonusPercent());
+    private Component speedText() {
+        return Component.translatable("gui.crystallomachia.speed", GolemData.formatSpeed(this.workstation.workSpeed()));
     }
 
     private void onSpeedTooltip(UIEvent event) {
         List<Component> lines = new ArrayList<>();
-        lines.add(Component.translatable("gui.crystallomachia.speed_bonus.title", this.workstation.speedBonusPercent()));
+        lines.add(Component.translatable("gui.crystallomachia.speed.title", GolemData.formatSpeed(this.workstation.workSpeed())));
         if (!this.workstation.meetsRequirements()) {
-            lines.add(Component.translatable("gui.crystallomachia.speed_bonus.unmet").withStyle(ChatFormatting.RED));
+            lines.add(Component.translatable("gui.crystallomachia.speed.unmet").withStyle(ChatFormatting.RED));
         }
-        List<CapabilityTooltip.Line> details = new ArrayList<>();
         for (int slot = 0; slot < this.workstation.golemSlots(); slot++) {
-            GolemRole role = this.workstation.golemRole(slot);
-            for (GolemCapability capability : role.capabilities()) {
-                int required = role.required(capability);
-                int level = this.workstation.golem(slot).level(capability);
-                int bonus = Math.max(0, level - required) * 100;
-                details.add(new CapabilityTooltip.Line(capability,
-                        Component.translatable("gui.crystallomachia.speed_bonus.detail", level, required, bonus).withStyle(ChatFormatting.GRAY)));
+            if (!this.workstation.getStack(slot).isEmpty()) {
+                lines.add(Component.translatable("gui.crystallomachia.speed.detail", slot + 1,
+                        GolemData.formatSpeed(this.workstation.golem(slot).speed())).withStyle(ChatFormatting.GRAY));
             }
         }
-        event.hoverTooltips = HoverTooltips.create(lines.toArray()).append(new CapabilityTooltip(details));
+        event.hoverTooltips = HoverTooltips.create(lines.toArray());
     }
-
     protected UIElement createRequirements() {
         UIElement requirements = column(1);
         for (int slot = 0; slot < this.workstation.golemSlots(); slot++) {

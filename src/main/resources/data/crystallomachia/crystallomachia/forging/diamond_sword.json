@@ -1,0 +1,6 @@
+{
+  "first": "minecraft:diamond",
+  "second": "minecraft:stick",
+  "result": "minecraft:diamond_sword",
+  "work": 400
+}

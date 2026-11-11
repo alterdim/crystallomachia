@@ -28,6 +28,14 @@ sourceSets.main.resources {
 
 repositories {
     maven { url = "https://maven.firstdark.dev/snapshots" }
+    maven {
+        name = 'Jared'
+        url = 'https://maven.blamejared.com/'
+        content {
+            includeGroup 'mezz.jei'
+            includeGroup 'net.mezzdev.config'
+        }
+    }
     exclusiveContent {
         forRepository {
             maven {
@@ -145,6 +153,10 @@ dependencies {
 
     implementation("com.lowdragmc.ldlib2:ldlib2-neoforge-${minecraft_version}:${ldlib2_version}")
     implementation "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolibVersion}"
+
+    compileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${minecraft_version}-neoforge-api:${jei_version}"
+    localRuntime "mezz.jei:jei-${minecraft_version}-neoforge:${jei_version}"
 
 }
 

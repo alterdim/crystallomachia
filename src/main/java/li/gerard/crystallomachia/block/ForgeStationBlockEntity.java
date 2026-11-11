@@ -15,22 +15,17 @@ import li.gerard.crystallomachia.golem.GolemRole;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
+import li.gerard.crystallomachia.recipe.ForgingRecipe;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.state.BlockState;
 
 public class ForgeStationBlockEntity extends AbstractWorkstationBlockEntity {
     public static final int FIRST_INPUT_SLOT = 2;
     public static final int SECOND_INPUT_SLOT = 3;
     public static final int OUTPUT_SLOT = 4;
-    private static final List<GolemRole> GOLEM_ROLES = List.of(
+    public static final List<GolemRole> GOLEM_ROLES = List.of(
             GolemRole.of(GolemCapability.HEAT, 2),
             GolemRole.of(GolemCapability.HANDWORK, 2));
-
-    private static final List<ForgeRecipe> RECIPES = List.of(
-            new ForgeRecipe(Items.IRON_INGOT, Items.STICK, Items.IRON_SWORD, 200),
-            new ForgeRecipe(Items.GOLD_INGOT, Items.STICK, Items.GOLDEN_SWORD, 200),
-            new ForgeRecipe(Items.DIAMOND, Items.STICK, Items.DIAMOND_SWORD, 400));
 
     public ForgeStationBlockEntity(BlockPos pos, BlockState state) {
         super(crystallomachia.FORGE_STATION_BLOCK_ENTITY.get(), pos, state, GOLEM_ROLES, 3);
@@ -43,33 +38,32 @@ public class ForgeStationBlockEntity extends AbstractWorkstationBlockEntity {
 
     @Override
     protected void serverTick(ServerLevel level) {
-        ForgeRecipe recipe = workSpeed() <= 0 ? null : findRecipe(getStack(FIRST_INPUT_SLOT), getStack(SECOND_INPUT_SLOT));
+        ForgingRecipe recipe = workSpeed() <= 0 ? null : findRecipe(level, getStack(FIRST_INPUT_SLOT), getStack(SECOND_INPUT_SLOT));
         if (recipe == null) {
             resetProgress();
             return;
         }
-        ItemStack result = new ItemStack(recipe.result());
+        ItemStack result = recipe.result().create();
         if (!canOutput(OUTPUT_SLOT, result)) {
             resetProgress();
             return;
         }
-        if (advanceProgress(recipe.duration())) {
+        if (advanceProgress(recipe.work())) {
             consume(FIRST_INPUT_SLOT, 1);
             consume(SECOND_INPUT_SLOT, 1);
             addOutput(OUTPUT_SLOT, result);
         }
     }
 
-    private static @Nullable ForgeRecipe findRecipe(ItemStack first, ItemStack second) {
+    private static @Nullable ForgingRecipe findRecipe(ServerLevel level, ItemStack first, ItemStack second) {
         if (first.isEmpty() || second.isEmpty()) {
             return null;
         }
-        for (ForgeRecipe recipe : RECIPES) {
-            if (recipe.matches(first, second) || recipe.matches(second, first)) {
-                return recipe;
-            }
-        }
-        return null;
+        return level.registryAccess().lookupOrThrow(ForgingRecipe.REGISTRY_KEY).listElements()
+                .map(holder -> holder.value())
+                .filter(recipe -> recipe.matches(first, second))
+                .findFirst()
+                .orElse(null);
     }
 
     @Override
@@ -80,11 +74,5 @@ public class ForgeStationBlockEntity extends AbstractWorkstationBlockEntity {
                 return row(4).addChildren(slot(FIRST_INPUT_SLOT), slot(SECOND_INPUT_SLOT), progressArrow(), outputSlot(OUTPUT_SLOT));
             }
         }.build(holder.player);
-    }
-
-    private record ForgeRecipe(Item first, Item second, Item result, int duration) {
-        boolean matches(ItemStack a, ItemStack b) {
-            return a.is(this.first) && b.is(this.second);
-        }
     }
 }

@@ -1,0 +1,6 @@
+{
+  "first": "minecraft:iron_ingot",
+  "second": "minecraft:stick",
+  "result": "minecraft:iron_sword",
+  "work": 200
+}

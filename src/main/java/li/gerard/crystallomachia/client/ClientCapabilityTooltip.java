@@ -34,7 +34,7 @@ public class ClientCapabilityTooltip implements ClientTooltipComponent {
     public void extractImage(Font font, int x, int y, int w, int h, GuiGraphicsExtractor graphics) {
         int lineY = y;
         for (CapabilityTooltip.Line line : this.tooltip.lines()) {
-            graphics.blit(line.capability().icon(), x, lineY, x + GolemCapability.ICON_SIZE, lineY + GolemCapability.ICON_SIZE, 0f, 1f, 0f, 1f);
+            graphics.blit(line.icon(), x, lineY, x + GolemCapability.ICON_SIZE, lineY + GolemCapability.ICON_SIZE, 0f, 1f, 0f, 1f);
             graphics.text(font, line.text(), x + TEXT_OFFSET, lineY + 2, 0xFFFFFFFF);
             lineY += LINE_HEIGHT;
         }

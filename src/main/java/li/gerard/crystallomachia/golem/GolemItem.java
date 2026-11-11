@@ -37,13 +37,13 @@ public class GolemItem extends Item {
     }
 
     public static ItemStack createFromMaterials(Map<GolemPart, Holder.Reference<GolemMaterial>> materials, long appearanceSeed) {
-        Map<GolemCapability, Integer> capabilities = new EnumMap<>(GolemCapability.class);
+        List<GolemData> contributions = new ArrayList<>();
         Map<GolemPart, ResourceKey<GolemMaterial>> parts = new EnumMap<>(GolemPart.class);
         materials.forEach((part, material) -> {
             parts.put(part, material.key());
-            material.value().contribution(part).capabilities().forEach((capability, level) -> capabilities.merge(capability, level, Integer::sum));
+            contributions.add(material.value().contribution(part));
         });
-        return create(new GolemData(capabilities, appearanceSeed), new GolemParts(parts));
+        return create(GolemData.combine(contributions, appearanceSeed), new GolemParts(parts));
     }
 
     public static GolemData getData(ItemStack stack) {
@@ -56,6 +56,9 @@ public class GolemItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
+        if (!appendSpeed(stack, builder, flag)) {
+            return;
+        }
         GolemParts parts = getParts(stack);
         for (GolemPart part : GolemPart.values()) {
             ResourceKey<GolemMaterial> material = parts.material(part);
@@ -64,6 +67,19 @@ public class GolemItem extends Item {
                         .withStyle(ChatFormatting.GRAY));
             }
         }
+    }
+
+    public static boolean appendSpeed(ItemStack stack, Consumer<Component> builder, TooltipFlag flag) {
+        if (!stack.has(crystallomachia.GOLEM_DATA.get())) {
+            return false;
+        }
+        if (!flag.hasShiftDown()) {
+            builder.accept(Component.translatable("tooltip.crystallomachia.hold_shift").withStyle(ChatFormatting.DARK_GRAY));
+            return false;
+        }
+        builder.accept(Component.translatable("tooltip.crystallomachia.speed", GolemData.formatSpeed(getData(stack).speed()))
+                .withStyle(ChatFormatting.GRAY));
+        return true;
     }
 
     @Override
@@ -78,6 +94,9 @@ public class GolemItem extends Item {
             if (level > 0) {
                 lines.add(new CapabilityTooltip.Line(capability, Component.literal(Integer.toString(level)).withStyle(ChatFormatting.GRAY)));
             }
+        }
+        for (GolemTrait trait : data.traits()) {
+            lines.add(new CapabilityTooltip.Line(trait, trait.displayName().copy().withStyle(ChatFormatting.GOLD)));
         }
         return lines.isEmpty() ? Optional.empty() : Optional.of(new CapabilityTooltip(lines));
     }

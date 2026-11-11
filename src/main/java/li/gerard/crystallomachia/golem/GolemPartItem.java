@@ -1,6 +1,10 @@
 package li.gerard.crystallomachia.golem;
 
 import java.util.Optional;
+import java.util.function.Consumer;
+
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 
 import li.gerard.crystallomachia.crystallomachia;
 import net.minecraft.core.Holder;
@@ -14,7 +18,7 @@ public class GolemPartItem extends Item {
     private final GolemPart part;
 
     public GolemPartItem(GolemPart part, Item.Properties properties) {
-        super(properties);
+        super(properties.stacksTo(1));
         this.part = part;
     }
 
@@ -36,6 +40,11 @@ public class GolemPartItem extends Item {
             return super.getName(stack);
         }
         return Component.translatable("item.crystallomachia.golem_part.named", GolemMaterial.displayName(material), super.getName(stack));
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context, TooltipDisplay display, Consumer<Component> builder, TooltipFlag flag) {
+        GolemItem.appendSpeed(stack, builder, flag);
     }
 
     @Override

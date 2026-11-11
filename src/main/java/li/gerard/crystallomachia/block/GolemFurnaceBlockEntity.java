@@ -10,6 +10,9 @@ import li.gerard.crystallomachia.crystallomachia;
 import li.gerard.crystallomachia.golem.GolemAnchor;
 import li.gerard.crystallomachia.golem.GolemCapability;
 import li.gerard.crystallomachia.golem.GolemRole;
+import li.gerard.crystallomachia.golem.GolemTrait;
+import li.gerard.crystallomachia.recipe.TraitSmeltingRecipe;
+import java.util.stream.Stream;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
@@ -23,12 +26,26 @@ import net.minecraft.world.level.block.state.BlockState;
 public class GolemFurnaceBlockEntity extends AbstractWorkstationBlockEntity {
     public static final int INPUT_SLOT = 1;
     public static final int OUTPUT_SLOT = 2;
-    private static final List<GolemRole> GOLEM_ROLES = List.of(GolemRole.of(GolemCapability.HEAT, 1));
+    public static final List<GolemRole> GOLEM_ROLES = List.of(GolemRole.of(GolemCapability.HEAT, 1));
 
     private final RecipeManager.CachedCheck<SingleRecipeInput, SmeltingRecipe> recipeCheck = RecipeManager.createCheck(RecipeType.SMELTING);
 
     public GolemFurnaceBlockEntity(BlockPos pos, BlockState state) {
         super(crystallomachia.GOLEM_FURNACE_BLOCK_ENTITY.get(), pos, state, GOLEM_ROLES, 2);
+    }
+
+    @Override
+    public List<GolemTrait> supportedTraits() {
+        return traitRecipes().map(TraitSmeltingRecipe::trait).distinct().toList();
+    }
+
+    private Stream<TraitSmeltingRecipe> traitRecipes() {
+        if (this.level == null) {
+            return Stream.empty();
+        }
+        return this.level.registryAccess().lookup(TraitSmeltingRecipe.REGISTRY_KEY).stream()
+                .flatMap(registry -> registry.listElements())
+                .map(holder -> holder.value());
     }
 
     @Override
@@ -43,18 +60,28 @@ public class GolemFurnaceBlockEntity extends AbstractWorkstationBlockEntity {
             resetProgress();
             return;
         }
-        SingleRecipeInput recipeInput = new SingleRecipeInput(input);
-        RecipeHolder<SmeltingRecipe> recipe = this.recipeCheck.getRecipeFor(recipeInput, level).orElse(null);
-        if (recipe == null) {
-            resetProgress();
-            return;
+        ItemStack result;
+        int work;
+        TraitSmeltingRecipe traitRecipe = traitRecipes().filter(recipe -> hasActiveTrait(recipe.trait()) && recipe.input().test(input))
+                .findFirst().orElse(null);
+        if (traitRecipe != null) {
+            result = traitRecipe.result().create();
+            work = traitRecipe.work();
+        } else {
+            SingleRecipeInput recipeInput = new SingleRecipeInput(input);
+            RecipeHolder<SmeltingRecipe> recipe = this.recipeCheck.getRecipeFor(recipeInput, level).orElse(null);
+            if (recipe == null) {
+                resetProgress();
+                return;
+            }
+            result = recipe.value().assemble(recipeInput);
+            work = recipe.value().cookingTime();
         }
-        ItemStack result = recipe.value().assemble(recipeInput);
         if (result.isEmpty() || !canOutput(OUTPUT_SLOT, result)) {
             resetProgress();
             return;
         }
-        if (advanceProgress(recipe.value().cookingTime())) {
+        if (advanceProgress(work)) {
             consume(INPUT_SLOT, 1);
             addOutput(OUTPUT_SLOT, result);
         }
