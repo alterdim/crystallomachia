@@ -77,8 +77,11 @@ public class GolemItem extends Item {
             builder.accept(Component.translatable("tooltip.crystallomachia.hold_shift").withStyle(ChatFormatting.DARK_GRAY));
             return false;
         }
-        builder.accept(Component.translatable("tooltip.crystallomachia.speed", GolemData.formatSpeed(getData(stack).speed()))
-                .withStyle(ChatFormatting.GRAY));
+        GolemData data = getData(stack);
+        builder.accept(Component.translatable("tooltip.crystallomachia.speed", GolemData.formatStat(data.speed())).withStyle(ChatFormatting.GRAY));
+        builder.accept(Component.translatable("tooltip.crystallomachia.health", GolemData.formatStat(data.combat().health())).withStyle(ChatFormatting.GRAY));
+        builder.accept(Component.translatable("tooltip.crystallomachia.attack", GolemData.formatStat(data.combat().attack())).withStyle(ChatFormatting.GRAY));
+        builder.accept(Component.translatable("tooltip.crystallomachia.armor", GolemData.formatStat(data.combat().armor())).withStyle(ChatFormatting.GRAY));
         return true;
     }
 

@@ -2,5 +2,8 @@
   "color": "#8A8A8A",
   "capabilities": { "heat": 1, "handwork": 1 },
   "texture": "crystallomachia:textures/golem/stone.png",
-  "speed": 1.0
+  "speed": 1.0,
+  "health": 4,
+  "attack": 1,
+  "armor": 0.5
 }

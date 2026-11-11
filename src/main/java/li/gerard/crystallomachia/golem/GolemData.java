@@ -20,7 +20,7 @@ import io.netty.buffer.ByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 
-public record GolemData(Map<GolemCapability, Integer> capabilities, List<GolemTrait> traits, float speed, long appearanceSeed) {
+public record GolemData(Map<GolemCapability, Integer> capabilities, List<GolemTrait> traits, float speed, GolemCombat combat, long appearanceSeed) {
     public static final float DEFAULT_SPEED = 1.0f;
     public static final GolemData EMPTY = new GolemData(Map.of(), 0L);
 
@@ -28,6 +28,7 @@ public record GolemData(Map<GolemCapability, Integer> capabilities, List<GolemTr
             Codec.unboundedMap(GolemCapability.CODEC, Codec.INT).fieldOf("capabilities").forGetter(GolemData::capabilities),
             GolemTrait.CODEC.listOf().optionalFieldOf("traits", List.of()).forGetter(GolemData::traits),
             Codec.FLOAT.optionalFieldOf("speed", DEFAULT_SPEED).forGetter(GolemData::speed),
+            GolemCombat.CODEC.optionalFieldOf("combat", GolemCombat.DEFAULT).forGetter(GolemData::combat),
             Codec.LONG.optionalFieldOf("appearance_seed", 0L).forGetter(GolemData::appearanceSeed)
     ).apply(instance, GolemData::new));
 
@@ -37,6 +38,7 @@ public record GolemData(Map<GolemCapability, Integer> capabilities, List<GolemTr
             GolemData::capabilities,
             GolemTrait.STREAM_CODEC.apply(ByteBufCodecs.list()), GolemData::traits,
             ByteBufCodecs.FLOAT, GolemData::speed,
+            GolemCombat.STREAM_CODEC, GolemData::combat,
             ByteBufCodecs.VAR_LONG, GolemData::appearanceSeed,
             GolemData::new);
 
@@ -59,23 +61,29 @@ public record GolemData(Map<GolemCapability, Integer> capabilities, List<GolemTr
     }
 
     public GolemData(Map<GolemCapability, Integer> capabilities, long appearanceSeed) {
-        this(capabilities, List.of(), DEFAULT_SPEED, appearanceSeed);
+        this(capabilities, List.of(), DEFAULT_SPEED, GolemCombat.DEFAULT, appearanceSeed);
     }
 
     public static GolemData combine(List<GolemData> contributions, long appearanceSeed) {
         Map<GolemCapability, Integer> capabilities = new EnumMap<>(GolemCapability.class);
         List<GolemTrait> traits = new ArrayList<>();
         float speed = 0f;
+        List<GolemCombat> combat = new ArrayList<>();
         for (GolemData contribution : contributions) {
             contribution.capabilities().forEach((capability, level) -> capabilities.merge(capability, level, Integer::sum));
             traits.addAll(contribution.traits());
             speed += contribution.speed();
+            combat.add(contribution.combat());
         }
-        return new GolemData(capabilities, traits, contributions.isEmpty() ? DEFAULT_SPEED : speed / contributions.size(), appearanceSeed);
+        return new GolemData(capabilities, traits, contributions.isEmpty() ? DEFAULT_SPEED : speed / contributions.size(), GolemCombat.sum(combat), appearanceSeed);
     }
 
     public static String formatSpeed(float speed) {
-        return new DecimalFormat("0.##", DecimalFormatSymbols.getInstance(Locale.ROOT)).format(speed);
+        return formatStat(speed);
+    }
+
+    public static String formatStat(float value) {
+        return new DecimalFormat("0.##", DecimalFormatSymbols.getInstance(Locale.ROOT)).format(value);
     }
 
     public int level(GolemCapability capability) {

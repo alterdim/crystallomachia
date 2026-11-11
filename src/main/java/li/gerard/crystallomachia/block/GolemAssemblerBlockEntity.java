@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import org.jspecify.annotations.Nullable;
 
@@ -17,6 +18,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.ItemSlot;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.inventory.InventorySlots;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
 import com.lowdragmc.lowdraglib2.gui.ui.style.StylesheetManager;
@@ -152,18 +154,15 @@ public class GolemAssemblerBlockEntity extends AbstractWorkstationBlockEntity {
     }
 
     private UIElement createPreview() {
-        UIElement panel = new UIElement().layout(layout -> layout.flexDirection(FlexDirection.COLUMN).width(84).height(86).paddingAll(4).gapAll(1))
-                .style(style -> style.backgroundTexture(new ColorRectTexture(0xFF000000)));
-        panel.addChild(new Label().setText(Component.translatable("gui.crystallomachia.preview").withStyle(ChatFormatting.GRAY)));
+        ScrollerView scroller = new ScrollerView();
+        scroller.layout(layout -> layout.widthPercent(100).heightPercent(100));
+        scroller.addScrollViewChild(new Label().setText(Component.translatable("gui.crystallomachia.preview").withStyle(ChatFormatting.GRAY)));
 
         List<Runnable> updates = new ArrayList<>();
-        UIElement speed = new Label().bindDataSource(SupplierDataSource.of(() -> {
-            GolemData data = preview();
-            return Component.translatable("tooltip.crystallomachia.speed", GolemData.formatSpeed(data == null ? 0f : data.speed()))
-                    .withStyle(ChatFormatting.WHITE);
-        }));
-        panel.addChild(speed);
-        updates.add(() -> speed.setDisplay(preview() != null));
+        addStatLine(scroller, updates, "tooltip.crystallomachia.speed", data -> data.speed());
+        addStatLine(scroller, updates, "tooltip.crystallomachia.health", data -> data.combat().health());
+        addStatLine(scroller, updates, "tooltip.crystallomachia.attack", data -> data.combat().attack());
+        addStatLine(scroller, updates, "tooltip.crystallomachia.armor", data -> data.combat().armor());
 
         for (GolemCapability capability : GolemCapability.values()) {
             UIElement line = row(3).addChildren(
@@ -172,7 +171,7 @@ public class GolemAssemblerBlockEntity extends AbstractWorkstationBlockEntity {
                         GolemData data = preview();
                         return Component.literal(Integer.toString(data == null ? 0 : data.level(capability))).withStyle(ChatFormatting.WHITE);
                     })));
-            panel.addChild(line);
+            scroller.addScrollViewChild(line);
             updates.add(() -> {
                 GolemData data = preview();
                 line.setDisplay(data != null && data.level(capability) > 0);
@@ -182,17 +181,29 @@ public class GolemAssemblerBlockEntity extends AbstractWorkstationBlockEntity {
             UIElement line = row(3).addChildren(
                     icon(trait.icon().toString()),
                     new Label().setText(trait.displayName().copy().withStyle(ChatFormatting.GOLD)));
-            panel.addChild(line);
+            scroller.addScrollViewChild(line);
             updates.add(() -> {
                 GolemData data = preview();
                 line.setDisplay(data != null && data.hasTrait(trait));
             });
         }
         updates.forEach(Runnable::run);
+
+        UIElement panel = new UIElement().layout(layout -> layout.width(96).height(86).paddingAll(3))
+                .style(style -> style.backgroundTexture(new ColorRectTexture(0xFF000000)));
+        panel.addChild(scroller);
         panel.addEventListener(UIEvents.TICK, event -> updates.forEach(Runnable::run));
         return panel;
     }
 
+    private void addStatLine(ScrollerView scroller, List<Runnable> updates, String key, Function<GolemData, Float> stat) {
+        UIElement line = new Label().bindDataSource(SupplierDataSource.of(() -> {
+            GolemData data = preview();
+            return Component.translatable(key, GolemData.formatStat(data == null ? 0f : stat.apply(data))).withStyle(ChatFormatting.WHITE);
+        }));
+        scroller.addScrollViewChild(line);
+        updates.add(() -> line.setDisplay(preview() != null));
+    }
     private static UIElement icon(String texture) {
         return new UIElement().layout(layout -> layout.width(GolemCapability.ICON_SIZE).height(GolemCapability.ICON_SIZE))
                 .style(style -> style.backgroundTexture(SpriteTexture.of(texture)));

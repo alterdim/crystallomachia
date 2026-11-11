@@ -13,6 +13,14 @@ import li.gerard.crystallomachia.block.GolemAssemblerBlockEntity;
 import java.util.EnumMap;
 import java.util.List;
 import li.gerard.crystallomachia.golem.GolemParts;
+import li.gerard.crystallomachia.entity.GolemEntity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.SpawnPlacementTypes;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.neoforged.neoforge.event.entity.EntityAttributeCreationEvent;
+import net.neoforged.neoforge.event.entity.RegisterSpawnPlacementsEvent;
 import li.gerard.crystallomachia.recipe.ForgingRecipe;
 import li.gerard.crystallomachia.recipe.TraitSmeltingRecipe;
 import net.minecraft.core.Holder;
@@ -91,7 +99,12 @@ public class crystallomachia {
 
     public static final DeferredItem<GolemItem> GOLEM_ITEM =ITEMS.registerItem("golem", GolemItem::new);
 
-    public static final DeferredItem<Item> BURNTMETAL_INGOT = ITEMS.registerSimpleItem("burntmetal_ingot");
+    public static final DeferredRegister.Entities ENTITY_TYPES = DeferredRegister.createEntities(MODID);
+
+    public static final DeferredHolder<EntityType<?>, EntityType<GolemEntity>> GOLEM_ENTITY = ENTITY_TYPES.registerEntityType("golem",
+            GolemEntity::new, MobCategory.MONSTER, builder -> builder.sized(1.2f, 3.0f).clientTrackingRange(8));
+
+    public static final DeferredItem<Item> BURNTMETAL_INGOT =ITEMS.registerSimpleItem("burntmetal_ingot");
 
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, MODID);
 
@@ -165,6 +178,12 @@ public class crystallomachia {
         // Register the Deferred Register to the mod event bus so items get registered
         ITEMS.register(modEventBus);
         DATA_COMPONENTS.register(modEventBus);
+        ENTITY_TYPES.register(modEventBus);
+        modEventBus.addListener((EntityAttributeCreationEvent event) ->
+                event.put(GOLEM_ENTITY.get(), GolemEntity.createAttributes().build()));
+        modEventBus.addListener((RegisterSpawnPlacementsEvent event) ->
+                event.register(GOLEM_ENTITY.get(), SpawnPlacementTypes.ON_GROUND, Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                        Monster::checkMonsterSpawnRules, RegisterSpawnPlacementsEvent.Operation.REPLACE));
         modEventBus.addListener((NewDatapackRegistryEvent event) -> {
             event.worldRegistry(GolemMaterial.REGISTRY_KEY, GolemMaterial.CODEC, GolemMaterial.CODEC);
             event.worldRegistry(ForgingRecipe.REGISTRY_KEY, ForgingRecipe.CODEC, ForgingRecipe.CODEC);

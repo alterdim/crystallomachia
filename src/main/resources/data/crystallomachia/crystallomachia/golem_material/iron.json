@@ -1,5 +1,9 @@
 {
   "color": "#D8D8D8",
   "capabilities": { "heat": 1, "handwork": 2, "precision": 1 },
-  "speed": 2.0
+  "speed": 2.0,
+  "health": 6,
+  "attack": 2,
+  "armor": 2,
+  "spawn_biomes": "#minecraft:is_forest"
 }

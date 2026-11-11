@@ -3,5 +3,9 @@
   "capabilities": { "heat": 2, "handwork": 1, "precision": 1 },
   "texture": "crystallomachia:textures/golem/copper.png",
   "traits": { "torso": ["overheat"] },
-  "speed": 1.5
+  "speed": 1.5,
+  "health": 5,
+  "attack": 1.5,
+  "armor": 1,
+  "spawn_biomes": "#minecraft:is_mountain"
 }

@@ -26,6 +26,16 @@ public class GolemPartItem extends Item {
         return this.part;
     }
 
+    public static GolemPartItem forPart(GolemPart part) {
+        return switch (part) {
+            case HEAD -> crystallomachia.GOLEM_HEAD.get();
+            case TORSO -> crystallomachia.GOLEM_TORSO.get();
+            case HAND_LEFT -> crystallomachia.GOLEM_HAND_LEFT.get();
+            case HAND_RIGHT -> crystallomachia.GOLEM_HAND_RIGHT.get();
+            case LEGS -> crystallomachia.GOLEM_LEGS.get();
+        };
+    }
+
     public ItemStack create(Holder.Reference<GolemMaterial> material) {
         ItemStack stack = new ItemStack(this);
         stack.set(crystallomachia.GOLEM_MATERIAL.get(), material.key());

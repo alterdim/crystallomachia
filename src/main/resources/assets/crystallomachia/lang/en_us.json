@@ -36,6 +36,10 @@
   "gui.crystallomachia.assemble": "Assemble",
   "gui.crystallomachia.preview": "Preview",
   "tooltip.crystallomachia.speed": "Speed: %s",
+  "tooltip.crystallomachia.health": "Health: %s",
+  "tooltip.crystallomachia.attack": "Attack: %s",
+  "tooltip.crystallomachia.armor": "Armor: %s",
+  "entity.crystallomachia.golem": "Golem",
   "capability.crystallomachia.heat": "Heat",
   "capability.crystallomachia.handwork": "Handwork",
 
