@@ -27,7 +27,17 @@ sourceSets.main.resources {
 }
 
 repositories {
-    // Add here additional repositories if required by some of the dependencies below.
+    maven { url = "https://maven.firstdark.dev/snapshots" }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'GeckoLib'
+                url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/'
+            }
+        }
+        filter { includeGroupAndSubgroups('com.geckolib') }
+    }
+
 }
 
 base {
@@ -132,6 +142,10 @@ dependencies {
     // For more info:
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
+
+    implementation("com.lowdragmc.ldlib2:ldlib2-neoforge-${minecraft_version}:${ldlib2_version}")
+    implementation "com.geckolib:geckolib-neoforge-${minecraft_version}:${geckolibVersion}"
+
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
