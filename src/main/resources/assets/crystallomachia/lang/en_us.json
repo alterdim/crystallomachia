@@ -1,0 +1,13 @@
+{
+  "itemGroup.crystallomachia": "Example Mod Tab",
+  "block.crystallomachia.example_block": "Example Block",
+  "item.crystallomachia.example_item": "Example Item",
+
+  "crystallomachia.configuration.title": "crystallomachia Configs",
+  "crystallomachia.configuration.section.crystallomachia.common.toml": "crystallomachia Configs",
+  "crystallomachia.configuration.section.crystallomachia.common.toml.title": "crystallomachia Configs",
+  "crystallomachia.configuration.items": "Item List",
+  "crystallomachia.configuration.logDirtBlock": "Log Dirt Block",
+  "crystallomachia.configuration.magicNumberIntroduction": "Magic Number Text",
+  "crystallomachia.configuration.magicNumber": "Magic Number"
+}
