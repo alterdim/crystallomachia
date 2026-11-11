@@ -1,0 +1,5 @@
+{
+  "color": "#C87533",
+  "capabilities": { "heat": 2, "handwork": 1, "precision": 1 },
+  "texture": "crystallomachia:textures/golem/copper.png"
+}

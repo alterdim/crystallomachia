@@ -2,7 +2,10 @@ package li.gerard.crystallomachia;
 
 import li.gerard.crystallomachia.client.ClientCapabilityTooltip;
 import li.gerard.crystallomachia.block.AbstractWorkstationBlockEntity;
+import li.gerard.crystallomachia.client.GolemMaterialTint;
 import li.gerard.crystallomachia.client.WorkEffectEmitter;
+import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import li.gerard.crystallomachia.client.WorkstationRenderer;
 import li.gerard.crystallomachia.golem.CapabilityTooltip;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
@@ -36,9 +39,15 @@ public class crystallomachiaClient {
     }
 
     @SubscribeEvent
+    static void registerTintSources(RegisterColorHandlersEvent.ItemTintSources event) {
+        event.register(Identifier.fromNamespaceAndPath(crystallomachia.MODID, "golem_material"), GolemMaterialTint.MAP_CODEC);
+    }
+
+    @SubscribeEvent
     static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerBlockEntityRenderer(crystallomachia.GOLEM_FURNACE_BLOCK_ENTITY.get(), WorkstationRenderer::new);
         event.registerBlockEntityRenderer(crystallomachia.FORGE_STATION_BLOCK_ENTITY.get(), WorkstationRenderer::new);
+        event.registerBlockEntityRenderer(crystallomachia.GOLEM_ASSEMBLER_BLOCK_ENTITY.get(), WorkstationRenderer::new);
     }
 
     @SubscribeEvent

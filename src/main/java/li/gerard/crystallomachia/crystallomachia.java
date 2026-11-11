@@ -8,6 +8,17 @@ import java.util.Map;
 
 import li.gerard.crystallomachia.block.ForgeStationBlock;
 import li.gerard.crystallomachia.block.ForgeStationBlockEntity;
+import li.gerard.crystallomachia.block.GolemAssemblerBlock;
+import li.gerard.crystallomachia.block.GolemAssemblerBlockEntity;
+import java.util.EnumMap;
+import java.util.List;
+import li.gerard.crystallomachia.golem.GolemParts;
+import net.minecraft.core.Holder;
+import li.gerard.crystallomachia.golem.GolemMaterial;
+import net.minecraft.resources.ResourceKey;
+import net.neoforged.neoforge.registries.NewDatapackRegistryEvent;
+import li.gerard.crystallomachia.golem.GolemPart;
+import li.gerard.crystallomachia.golem.GolemPartItem;
 import li.gerard.crystallomachia.block.GolemFurnaceBlock;
 import li.gerard.crystallomachia.block.GolemFurnaceBlockEntity;
 import li.gerard.crystallomachia.golem.GolemCapability;
@@ -70,7 +81,13 @@ public class crystallomachia {
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<GolemData>> GOLEM_DATA = DATA_COMPONENTS.registerComponentType("golem_data",
             builder -> builder.persistent(GolemData.CODEC).networkSynchronized(GolemData.STREAM_CODEC));
 
-    public static final DeferredItem<GolemItem> GOLEM_ITEM = ITEMS.registerItem("golem", GolemItem::new);
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ResourceKey<GolemMaterial>>> GOLEM_MATERIAL = DATA_COMPONENTS.registerComponentType("golem_material",
+            builder -> builder.persistent(ResourceKey.codec(GolemMaterial.REGISTRY_KEY)).networkSynchronized(ResourceKey.streamCodec(GolemMaterial.REGISTRY_KEY)));
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<GolemParts>> GOLEM_PARTS = DATA_COMPONENTS.registerComponentType("golem_parts",
+            builder -> builder.persistent(GolemParts.CODEC).networkSynchronized(GolemParts.STREAM_CODEC));
+
+    public static final DeferredItem<GolemItem> GOLEM_ITEM =ITEMS.registerItem("golem", GolemItem::new);
 
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES = DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, MODID);
 
@@ -86,6 +103,18 @@ public class crystallomachia {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<ForgeStationBlockEntity>> FORGE_STATION_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("forge_station",
             () -> new BlockEntityType<>(ForgeStationBlockEntity::new, FORGE_STATION.get()));
 
+    public static final DeferredBlock<GolemAssemblerBlock> GOLEM_ASSEMBLER = BLOCKS.registerBlock("golem_assembler", GolemAssemblerBlock::new,
+            p -> p.mapColor(MapColor.STONE).strength(3.5f));
+    public static final DeferredItem<BlockItem> GOLEM_ASSEMBLER_ITEM = ITEMS.registerSimpleBlockItem("golem_assembler", GOLEM_ASSEMBLER);
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<GolemAssemblerBlockEntity>> GOLEM_ASSEMBLER_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("golem_assembler",
+            () -> new BlockEntityType<>(GolemAssemblerBlockEntity::new, GOLEM_ASSEMBLER.get()));
+
+    public static final DeferredItem<GolemPartItem> GOLEM_HEAD = ITEMS.registerItem("golem_head", p -> new GolemPartItem(GolemPart.HEAD, p));
+    public static final DeferredItem<GolemPartItem> GOLEM_TORSO = ITEMS.registerItem("golem_torso", p -> new GolemPartItem(GolemPart.TORSO, p));
+    public static final DeferredItem<GolemPartItem> GOLEM_HAND_LEFT = ITEMS.registerItem("golem_hand_left", p -> new GolemPartItem(GolemPart.HAND_LEFT, p));
+    public static final DeferredItem<GolemPartItem> GOLEM_HAND_RIGHT = ITEMS.registerItem("golem_hand_right", p -> new GolemPartItem(GolemPart.HAND_RIGHT, p));
+    public static final DeferredItem<GolemPartItem> GOLEM_LEGS = ITEMS.registerItem("golem_legs", p -> new GolemPartItem(GolemPart.LEGS, p));
+
     // Creates a creative tab with the id "crystallomachia:example_tab" for the example item, that is placed after the combat tab
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> EXAMPLE_TAB = CREATIVE_MODE_TABS.register("example_tab", () -> CreativeModeTab.builder()
             .title(Component.translatable("itemGroup.crystallomachia")) //The language key for the title of your CreativeModeTab
@@ -95,6 +124,25 @@ public class crystallomachia {
                 output.accept(EXAMPLE_ITEM.get());// Add the example item to the tab. For your own tabs, this method is preferred over the event
                 output.accept(GOLEM_FURNACE_ITEM.get());
                 output.accept(FORGE_STATION_ITEM.get());
+                output.accept(GOLEM_ASSEMBLER_ITEM.get());
+                parameters.holders().lookup(GolemMaterial.REGISTRY_KEY).ifPresent(materials -> materials.listElements().forEach(material -> {
+                    output.accept(GOLEM_HEAD.get().create(material));
+                    output.accept(GOLEM_TORSO.get().create(material));
+                    output.accept(GOLEM_HAND_LEFT.get().create(material));
+                    output.accept(GOLEM_HAND_RIGHT.get().create(material));
+                    output.accept(GOLEM_LEGS.get().create(material));
+                }));
+                parameters.holders().lookup(GolemMaterial.REGISTRY_KEY).ifPresent(materials -> {
+                    List<Holder.Reference<GolemMaterial>> all = materials.listElements().toList();
+                    if (all.isEmpty()) {
+                        return;
+                    }
+                    Map<GolemPart, Holder.Reference<GolemMaterial>> mixed = new EnumMap<>(GolemPart.class);
+                    for (GolemPart part : GolemPart.values()) {
+                        mixed.put(part, all.get(part.ordinal() % all.size()));
+                    }
+                    output.accept(GolemItem.createFromMaterials(mixed, 5L));
+                });
                 output.accept(GolemItem.create(new GolemData(Map.of(GolemCapability.HEAT, 1), 1L)));
                 output.accept(GolemItem.create(new GolemData(Map.of(GolemCapability.HEAT, 3), 2L)));
                 output.accept(GolemItem.create(new GolemData(Map.of(GolemCapability.HANDWORK, 1), 3L)));
@@ -112,6 +160,8 @@ public class crystallomachia {
         // Register the Deferred Register to the mod event bus so items get registered
         ITEMS.register(modEventBus);
         DATA_COMPONENTS.register(modEventBus);
+        modEventBus.addListener((NewDatapackRegistryEvent event) ->
+                event.worldRegistry(GolemMaterial.REGISTRY_KEY, GolemMaterial.CODEC, GolemMaterial.CODEC));
         BLOCK_ENTITY_TYPES.register(modEventBus);
         // Register the Deferred Register to the mod event bus so tabs get registered
         CREATIVE_MODE_TABS.register(modEventBus);

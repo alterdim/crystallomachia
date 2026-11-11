@@ -1,0 +1,10 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "crystallomachia:item/golem_legs",
+    "layer1": "crystallomachia:item/golem_torso",
+    "layer2": "crystallomachia:item/golem_head",
+    "layer3": "crystallomachia:item/golem_left_hand",
+    "layer4": "crystallomachia:item/golem_right_hand"
+  }
+}

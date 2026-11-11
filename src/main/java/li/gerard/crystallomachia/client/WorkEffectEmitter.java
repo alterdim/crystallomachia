@@ -29,16 +29,24 @@ public final class WorkEffectEmitter {
                 }
                 if (effect.sound() != null && time % Math.max(1, effect.sound().interval()) == 0) {
                     WorkEffect.Sound sound = effect.sound();
-                    Vec3 at = workstation.effectPosition(slot, sound.at());
+                    Vec3 at = resolve(workstation, slot, sound.at());
                     level.playLocalSound(at.x, at.y, at.z, sound.sound(), SoundSource.BLOCKS, sound.volume(), sound.pitch(), false);
                 }
             }
         }
     }
 
+    private static Vec3 resolve(AbstractWorkstationBlockEntity workstation, int slot, WorkEffect.Point point) {
+        if (point.origin() == WorkEffect.Origin.BONE && point.bone() != null) {
+            Vec3 bone = GolemVisual.get(workstation, slot).boneWorldPosition(point.bone());
+            return bone != null ? bone : workstation.effectPosition(slot, point.fallback());
+        }
+        return workstation.effectPosition(slot, point);
+    }
+
     private static void spawnParticles(AbstractWorkstationBlockEntity workstation, int slot, WorkEffect.Particles particles, RandomSource random) {
-        Vec3 from = workstation.effectPosition(slot, particles.from());
-        Vec3 to = workstation.effectPosition(slot, particles.to());
+        Vec3 from = resolve(workstation, slot, particles.from());
+        Vec3 to = resolve(workstation, slot, particles.to());
         int lifetime = Math.max(1, particles.lifetime());
         float friction = particles.friction();
         double factor = friction >= 1f ? 1.0 / lifetime : (1.0 - friction) / (1.0 - Math.pow(friction, lifetime));

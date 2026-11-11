@@ -1,6 +1,28 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "minecraft:item/armor_stand"
+    "model": "crystallomachia:item/golem",
+    "tints": [
+      {
+        "type": "crystallomachia:golem_material",
+        "part": "legs"
+      },
+      {
+        "type": "crystallomachia:golem_material",
+        "part": "torso"
+      },
+      {
+        "type": "crystallomachia:golem_material",
+        "part": "head"
+      },
+      {
+        "type": "crystallomachia:golem_material",
+        "part": "hand_left"
+      },
+      {
+        "type": "crystallomachia:golem_material",
+        "part": "hand_right"
+      }
+    ]
   }
 }

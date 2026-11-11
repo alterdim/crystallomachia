@@ -97,7 +97,7 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
         double right = point.right();
         double up = point.up();
         double front = point.front();
-        if (point.origin() == WorkEffect.Origin.GOLEM) {
+        if (point.origin() != WorkEffect.Origin.WORKSTATION) {
             GolemAnchor anchor = golemAnchor(slot);
             right += anchor.right();
             up += anchor.up();

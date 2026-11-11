@@ -10,5 +10,5 @@ import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 public class WorkstationRenderState extends BlockEntityRenderState {
     public final List<Golem> golems = new ArrayList<>();
 
-    public record Golem(GeoRenderState state, double x, double y, double z, float yaw) {}
+    public record Golem(List<GeoRenderState> passes,double x, double y, double z, float yaw) {}
 }

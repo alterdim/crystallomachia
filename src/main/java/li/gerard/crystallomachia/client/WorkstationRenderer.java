@@ -1,7 +1,7 @@
 package li.gerard.crystallomachia.client;
 
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.jspecify.annotations.Nullable;
 
@@ -28,7 +28,6 @@ import net.minecraft.world.phys.Vec3;
 
 public class WorkstationRenderer implements BlockEntityRenderer<AbstractWorkstationBlockEntity, WorkstationRenderState> {
     private final GolemRenderer golemRenderer = new GolemRenderer();
-    private final Map<AbstractWorkstationBlockEntity, GolemVisual[]> visuals = new WeakHashMap<>();
 
     public WorkstationRenderer(BlockEntityRendererProvider.Context context) {
     }
@@ -47,20 +46,15 @@ public class WorkstationRenderer implements BlockEntityRenderer<AbstractWorkstat
         if (level == null) {
             return;
         }
-        GolemVisual[] slots = this.visuals.computeIfAbsent(workstation, key -> new GolemVisual[key.golemSlots()]);
         float facingYaw = facingYaw(workstation.getBlockState().getValue(AbstractWorkstationBlock.FACING));
         double sin = Math.sin(Math.toRadians(facingYaw));
         double cos = Math.cos(Math.toRadians(facingYaw));
         BlockPos pos = workstation.getBlockPos();
-        for (int slot = 0; slot < slots.length; slot++) {
+        for (int slot = 0; slot < workstation.golemSlots(); slot++) {
             if (!(workstation.getStack(slot).getItem() instanceof GolemItem)) {
                 continue;
             }
-            if (slots[slot] == null) {
-                slots[slot] = new GolemVisual();
-            }
-            GolemVisual visual = slots[slot];
-            visual.update(workstation.golem(slot), workstation.isWorking());
+            GolemVisual visual = GolemVisual.get(workstation, slot);
 
             GolemAnchor anchor = workstation.golemAnchor(slot);
             double localX = anchor.right();
@@ -68,11 +62,20 @@ public class WorkstationRenderer implements BlockEntityRenderer<AbstractWorkstat
             double x = 0.5 + localX * cos + localZ * sin;
             double z = 0.5 - localX * sin + localZ * cos;
             double y = anchor.up();
+            float yaw = facingYaw + anchor.yaw();
+            visual.update(workstation.golem(slot), workstation.isWorking(), new Vec3(pos.getX() + x, pos.getY() + y, pos.getZ() + z), yaw);
 
-            GeoRenderState golemState = this.golemRenderer.fillRenderState(visual, null, this.golemRenderer.createRenderState(visual, null), partialTick);
             BlockPos lightPos = BlockPos.containing(pos.getX() + x, pos.getY() + y, pos.getZ() + z);
-            golemState.addGeckolibData(DataTickets.PACKED_LIGHT, LightCoordsUtil.getLightCoords(level, lightPos));
-            state.golems.add(new WorkstationRenderState.Golem(golemState, x, y, z, facingYaw + anchor.yaw()));
+            int light = LightCoordsUtil.getLightCoords(level, lightPos);
+            List<GeoRenderState> passes = new ArrayList<>();
+            for (GolemPass pass : GolemPass.forParts(GolemItem.getParts(workstation.getStack(slot)))) {
+                GeoRenderState golemState = this.golemRenderer.fillRenderState(visual, null, this.golemRenderer.createRenderState(visual, null), partialTick);
+                golemState.addGeckolibData(DataTickets.PACKED_LIGHT, light);
+                golemState.addGeckolibData(DataTickets.RENDER_COLOR, pass.color());
+                golemState.addGeckolibData(GolemRenderer.PASS, pass);
+                passes.add(golemState);
+            }
+            state.golems.add(new WorkstationRenderState.Golem(passes, x, y, z, yaw));
         }
     }
 
@@ -82,7 +85,9 @@ public class WorkstationRenderer implements BlockEntityRenderer<AbstractWorkstat
             poseStack.pushPose();
             poseStack.translate(golem.x(), golem.y(), golem.z());
             poseStack.rotateDegrees(Axis.YP, golem.yaw());
-            this.golemRenderer.performRenderPass(golem.state(), poseStack, collector, camera);
+            for (GeoRenderState pass : golem.passes()) {
+                this.golemRenderer.performRenderPass(pass, poseStack, collector, camera);
+            }
             poseStack.popPose();
         }
     }

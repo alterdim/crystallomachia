@@ -1,0 +1,11 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "crystallomachia:item/golem_legs",
+    "tints": [
+      {
+        "type": "crystallomachia:golem_material"
+      }
+    ]
+  }
+}

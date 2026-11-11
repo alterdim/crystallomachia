@@ -12,7 +12,8 @@ import net.minecraft.util.StringRepresentable;
 
 public enum GolemCapability implements StringRepresentable {
     HEAT("heat", "sprites/heat.png"),
-    HANDWORK("handwork", "sprites/handwork.png");
+    HANDWORK("handwork", "sprites/handwork.png"),
+    PRECISION("precision", "sprites/precision.png");
 
     public static final int ICON_SIZE = 12;
 

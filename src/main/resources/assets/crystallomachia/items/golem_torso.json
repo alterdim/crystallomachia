@@ -1,0 +1,11 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "crystallomachia:item/golem_torso",
+    "tints": [
+      {
+        "type": "crystallomachia:golem_material"
+      }
+    ]
+  }
+}
