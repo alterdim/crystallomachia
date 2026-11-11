@@ -1,7 +1,11 @@
 package li.gerard.crystallomachia;
 
 import li.gerard.crystallomachia.client.ClientCapabilityTooltip;
+import li.gerard.crystallomachia.block.AbstractWorkstationBlockEntity;
+import li.gerard.crystallomachia.client.WorkEffectEmitter;
+import li.gerard.crystallomachia.client.WorkstationRenderer;
 import li.gerard.crystallomachia.golem.CapabilityTooltip;
+import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.minecraft.client.Minecraft;
 import net.neoforged.neoforge.client.event.RegisterClientTooltipComponentFactoriesEvent;
 import net.neoforged.api.distmarker.Dist;
@@ -23,11 +27,18 @@ public class crystallomachiaClient {
         // The config screen is accessed by going to the Mods screen > clicking on your mod > clicking on config.
         // Do not forget to add translations for your config options to the en_us.json file.
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+        AbstractWorkstationBlockEntity.CLIENT_TICK = WorkEffectEmitter::tick;
     }
 
     @SubscribeEvent
     static void registerTooltipComponents(RegisterClientTooltipComponentFactoriesEvent event) {
         event.register(CapabilityTooltip.class, ClientCapabilityTooltip::new);
+    }
+
+    @SubscribeEvent
+    static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
+        event.registerBlockEntityRenderer(crystallomachia.GOLEM_FURNACE_BLOCK_ENTITY.get(), WorkstationRenderer::new);
+        event.registerBlockEntityRenderer(crystallomachia.FORGE_STATION_BLOCK_ENTITY.get(), WorkstationRenderer::new);
     }
 
     @SubscribeEvent

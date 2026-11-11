@@ -1,6 +1,8 @@
 package li.gerard.crystallomachia.block;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import com.lowdragmc.lowdraglib2.gui.factory.BlockUIMenuType;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
@@ -10,9 +12,13 @@ import com.lowdragmc.lowdraglib2.syncdata.holder.blockentity.ISyncPersistRPCBloc
 import com.lowdragmc.lowdraglib2.syncdata.storage.FieldManagedStorage;
 import com.lowdragmc.lowdraglib2.syncdata.storage.IManagedStorage;
 
+import li.gerard.crystallomachia.golem.GolemAnchor;
+import li.gerard.crystallomachia.golem.GolemCapability;
 import li.gerard.crystallomachia.golem.GolemData;
 import li.gerard.crystallomachia.golem.GolemItem;
 import li.gerard.crystallomachia.golem.GolemRole;
+import li.gerard.crystallomachia.golem.WorkEffect;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
@@ -24,6 +30,8 @@ import net.neoforged.neoforge.transfer.item.ItemResource;
 import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
 
 public abstract class AbstractWorkstationBlockEntity extends BlockEntity implements ISyncPersistRPCBlockEntity {
+    public static Consumer<AbstractWorkstationBlockEntity> CLIENT_TICK = workstation -> {};
+
     protected final List<GolemRole> golemRoles;
     protected final int golemSlots;
 
@@ -69,6 +77,46 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
 
     public GolemRole golemRole(int slot) {
         return this.golemRoles.get(slot);
+    }
+
+    public abstract GolemAnchor golemAnchor(int slot);
+
+    public boolean isWorking() {
+        return this.progress > 0;
+    }
+
+    public List<WorkEffect> workEffects(int slot) {
+        List<WorkEffect> effects = new ArrayList<>();
+        for (GolemCapability capability : golemRole(slot).capabilities()) {
+            effects.addAll(WorkEffect.forCapability(capability));
+        }
+        return effects;
+    }
+
+    public Vec3 effectPosition(int slot, WorkEffect.Point point) {
+        double right = point.right();
+        double up = point.up();
+        double front = point.front();
+        if (point.origin() == WorkEffect.Origin.GOLEM) {
+            GolemAnchor anchor = golemAnchor(slot);
+            right += anchor.right();
+            up += anchor.up();
+            front += anchor.front();
+        }
+        double angle = Math.toRadians(switch (getBlockState().getValue(AbstractWorkstationBlock.FACING)) {
+            case SOUTH -> 180;
+            case WEST -> 90;
+            case EAST -> -90;
+            default -> 0;
+        });
+        double x = right * Math.cos(angle) - front * Math.sin(angle);
+        double z = -right * Math.sin(angle) - front * Math.cos(angle);
+        BlockPos pos = getBlockPos();
+        return new Vec3(pos.getX() + 0.5 + x, pos.getY() + up, pos.getZ() + 0.5 + z);
+    }
+
+    public void clientTick() {
+        CLIENT_TICK.accept(this);
     }
 
     public abstract ModularUI createUI(BlockUIMenuType.BlockUIHolder holder);

@@ -48,7 +48,7 @@ public abstract class AbstractWorkstationBlock extends BaseEntityBlock implement
     @Override
     public <T extends BlockEntity> @Nullable BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
         if (!(level instanceof ServerLevel serverLevel)) {
-            return null;
+            return createTickerHelper(type, blockEntityType(), (tickLevel, pos, tickState, blockEntity) -> blockEntity.clientTick());
         }
         return createTickerHelper(type, blockEntityType(), (tickLevel, pos, tickState, blockEntity) -> blockEntity.serverTick(serverLevel));
     }

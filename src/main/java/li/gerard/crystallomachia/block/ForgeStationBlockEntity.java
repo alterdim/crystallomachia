@@ -9,6 +9,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 
 import li.gerard.crystallomachia.crystallomachia;
+import li.gerard.crystallomachia.golem.GolemAnchor;
 import li.gerard.crystallomachia.golem.GolemCapability;
 import li.gerard.crystallomachia.golem.GolemRole;
 import net.minecraft.core.BlockPos;
@@ -33,6 +34,11 @@ public class ForgeStationBlockEntity extends AbstractWorkstationBlockEntity {
 
     public ForgeStationBlockEntity(BlockPos pos, BlockState state) {
         super(crystallomachia.FORGE_STATION_BLOCK_ENTITY.get(), pos, state, GOLEM_ROLES, 3);
+    }
+
+    @Override
+    public GolemAnchor golemAnchor(int slot) {
+        return slot == 0 ? GolemAnchor.onLeft() : GolemAnchor.onRight();
     }
 
     @Override

@@ -7,6 +7,7 @@ import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
 
 import li.gerard.crystallomachia.crystallomachia;
+import li.gerard.crystallomachia.golem.GolemAnchor;
 import li.gerard.crystallomachia.golem.GolemCapability;
 import li.gerard.crystallomachia.golem.GolemRole;
 import net.minecraft.core.BlockPos;
@@ -28,6 +29,11 @@ public class GolemFurnaceBlockEntity extends AbstractWorkstationBlockEntity {
 
     public GolemFurnaceBlockEntity(BlockPos pos, BlockState state) {
         super(crystallomachia.GOLEM_FURNACE_BLOCK_ENTITY.get(), pos, state, GOLEM_ROLES, 2);
+    }
+
+    @Override
+    public GolemAnchor golemAnchor(int slot) {
+        return GolemAnchor.inFront();
     }
 
     @Override
