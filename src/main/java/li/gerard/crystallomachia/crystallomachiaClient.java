@@ -2,6 +2,7 @@ package li.gerard.crystallomachia;
 
 import li.gerard.crystallomachia.client.ClientCapabilityTooltip;
 import li.gerard.crystallomachia.block.AbstractWorkstationBlockEntity;
+import li.gerard.crystallomachia.client.DiscoBallRenderer;
 import li.gerard.crystallomachia.client.GolemEntityRenderer;
 import li.gerard.crystallomachia.client.GolemMaterialTint;
 import li.gerard.crystallomachia.client.WorkEffectEmitter;
@@ -49,6 +50,9 @@ public class crystallomachiaClient {
         event.registerBlockEntityRenderer(crystallomachia.GOLEM_FURNACE_BLOCK_ENTITY.get(), WorkstationRenderer::new);
         event.registerBlockEntityRenderer(crystallomachia.FORGE_STATION_BLOCK_ENTITY.get(), WorkstationRenderer::new);
         event.registerBlockEntityRenderer(crystallomachia.GOLEM_ASSEMBLER_BLOCK_ENTITY.get(), WorkstationRenderer::new);
+        event.registerBlockEntityRenderer(crystallomachia.CORE_EXTRACTOR_BLOCK_ENTITY.get(), WorkstationRenderer::new);
+        event.registerBlockEntityRenderer(crystallomachia.STONE_DELICACY_BLOCK_ENTITY.get(), WorkstationRenderer::new);
+        event.registerBlockEntityRenderer(crystallomachia.DISCO_BALL_BLOCK_ENTITY.get(), DiscoBallRenderer::new);
         event.registerEntityRenderer(crystallomachia.GOLEM_ENTITY.get(), GolemEntityRenderer::new);
     }
 

@@ -6,6 +6,18 @@ import com.mojang.logging.LogUtils;
 
 import java.util.Map;
 
+import li.gerard.crystallomachia.block.CoreExtractorBlock;
+import li.gerard.crystallomachia.block.CoreExtractorBlockEntity;
+import li.gerard.crystallomachia.golem.GolemCoreItem;
+import li.gerard.crystallomachia.golem.GolemFoodItem;
+import li.gerard.crystallomachia.golem.GolemHunger;
+import li.gerard.crystallomachia.block.StoneDelicacyBlock;
+import li.gerard.crystallomachia.block.StoneDelicacyBlockEntity;
+import li.gerard.crystallomachia.recipe.CookingRecipe;
+import li.gerard.crystallomachia.block.DancefloorBlock;
+import li.gerard.crystallomachia.block.DiscoBallBlock;
+import li.gerard.crystallomachia.block.DiscoBallBlockEntity;
+import net.minecraft.world.item.DyeColor;
 import li.gerard.crystallomachia.block.ForgeStationBlock;
 import li.gerard.crystallomachia.block.ForgeStationBlockEntity;
 import li.gerard.crystallomachia.block.GolemAssemblerBlock;
@@ -97,6 +109,14 @@ public class crystallomachia {
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<GolemParts>> GOLEM_PARTS = DATA_COMPONENTS.registerComponentType("golem_parts",
             builder -> builder.persistent(GolemParts.CODEC).networkSynchronized(GolemParts.STREAM_CODEC));
 
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<GolemData>> GOLEM_CORE_DATA = DATA_COMPONENTS.registerComponentType("golem_core",
+            builder -> builder.persistent(GolemData.CODEC).networkSynchronized(GolemData.STREAM_CODEC));
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<GolemHunger>> GOLEM_HUNGER = DATA_COMPONENTS.registerComponentType("golem_hunger",
+            builder -> builder.persistent(GolemHunger.CODEC).networkSynchronized(GolemHunger.STREAM_CODEC));
+
+    public static final DeferredItem<GolemCoreItem> GOLEM_CORE = ITEMS.registerItem("golem_core", GolemCoreItem::new);
+
     public static final DeferredItem<GolemItem> GOLEM_ITEM =ITEMS.registerItem("golem", GolemItem::new);
 
     public static final DeferredRegister.Entities ENTITY_TYPES = DeferredRegister.createEntities(MODID);
@@ -126,6 +146,42 @@ public class crystallomachia {
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<GolemAssemblerBlockEntity>> GOLEM_ASSEMBLER_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("golem_assembler",
             () -> new BlockEntityType<>(GolemAssemblerBlockEntity::new, GOLEM_ASSEMBLER.get()));
 
+    public static final DeferredBlock<CoreExtractorBlock> CORE_EXTRACTOR = BLOCKS.registerBlock("core_extractor", CoreExtractorBlock::new,
+            p -> p.mapColor(MapColor.STONE).strength(3.5f));
+    public static final DeferredItem<BlockItem> CORE_EXTRACTOR_ITEM = ITEMS.registerSimpleBlockItem("core_extractor", CORE_EXTRACTOR);
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CoreExtractorBlockEntity>> CORE_EXTRACTOR_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("core_extractor",
+            () -> new BlockEntityType<>(CoreExtractorBlockEntity::new, CORE_EXTRACTOR.get()));
+
+    public static final DeferredBlock<StoneDelicacyBlock> STONE_DELICACY = BLOCKS.registerBlock("stone_delicacy", StoneDelicacyBlock::new,
+            p -> p.mapColor(MapColor.STONE).strength(3.5f));
+    public static final DeferredItem<BlockItem> STONE_DELICACY_ITEM = ITEMS.registerSimpleBlockItem("stone_delicacy", STONE_DELICACY);
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<StoneDelicacyBlockEntity>> STONE_DELICACY_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("stone_delicacy",
+            () -> new BlockEntityType<>(StoneDelicacyBlockEntity::new, STONE_DELICACY.get()));
+
+    public static final DeferredItem<GolemFoodItem> COAL_DELICACY = ITEMS.registerItem("coal_delicacy", p -> new GolemFoodItem(40f, 1f, 0, p));
+    public static final DeferredItem<GolemFoodItem> DIAMOND_DELICACY = ITEMS.registerItem("diamond_delicacy", p -> new GolemFoodItem(60f, 1.5f, 1200, p));
+
+    public static final Map<DyeColor, DeferredBlock<DancefloorBlock>> DANCEFLOORS = new EnumMap<>(DyeColor.class);
+    public static final Map<DyeColor, DeferredItem<BlockItem>> DANCEFLOOR_ITEMS = new EnumMap<>(DyeColor.class);
+
+    static {
+        for (DyeColor color : DyeColor.values()) {
+            String name = color.getName() + "_dancefloor";
+            DeferredBlock<DancefloorBlock> block = BLOCKS.registerBlock(name, DancefloorBlock::new,
+                    p -> p.mapColor(color).strength(1.5f).lightLevel(state -> 15).emissiveRendering(state -> true));
+            DANCEFLOORS.put(color, block);
+            DANCEFLOOR_ITEMS.put(color, ITEMS.registerSimpleBlockItem(name, block));
+        }
+    }
+
+    public static final DeferredBlock<DiscoBallBlock> DISCO_BALL = BLOCKS.registerBlock("disco_ball", DiscoBallBlock::new,
+            p -> p.mapColor(MapColor.METAL).strength(1.5f));
+    public static final DeferredItem<BlockItem> DISCO_BALL_ITEM = ITEMS.registerSimpleBlockItem("disco_ball", DISCO_BALL);
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<DiscoBallBlockEntity>> DISCO_BALL_BLOCK_ENTITY = BLOCK_ENTITY_TYPES.register("disco_ball",
+            () -> new BlockEntityType<>(DiscoBallBlockEntity::new, DISCO_BALL.get()));
+
+    public static final DeferredItem<Item> FIESTA_SHARD = ITEMS.registerSimpleItem("fiesta_shard");
+
     public static final DeferredItem<GolemPartItem> GOLEM_HEAD = ITEMS.registerItem("golem_head", p -> new GolemPartItem(GolemPart.HEAD, p));
     public static final DeferredItem<GolemPartItem> GOLEM_TORSO = ITEMS.registerItem("golem_torso", p -> new GolemPartItem(GolemPart.TORSO, p));
     public static final DeferredItem<GolemPartItem> GOLEM_HAND_LEFT = ITEMS.registerItem("golem_hand_left", p -> new GolemPartItem(GolemPart.HAND_LEFT, p));
@@ -142,6 +198,20 @@ public class crystallomachia {
                 output.accept(GOLEM_FURNACE_ITEM.get());
                 output.accept(FORGE_STATION_ITEM.get());
                 output.accept(GOLEM_ASSEMBLER_ITEM.get());
+                output.accept(CORE_EXTRACTOR_ITEM.get());
+                output.accept(GolemCoreItem.create(GolemCoreItem.stats(0.8f, 3f, 0.8f, 0.5f, 15f, 0.7f)));
+                output.accept(GolemCoreItem.create(GolemCoreItem.stats(3f, 12f, 4f, 4f, 60f, 2f)));
+                output.accept(GolemItem.create(new GolemData(Map.of(GolemCapability.FREEZING, 1), 7L)));
+                output.accept(GolemItem.create(new GolemData(Map.of(GolemCapability.STRENGTH, 1), 8L)));
+                output.accept(STONE_DELICACY_ITEM.get());
+                output.accept(COAL_DELICACY.get());
+                output.accept(DIAMOND_DELICACY.get());
+                output.accept(GolemItem.create(new GolemData(Map.of(GolemCapability.COOKING, 1), 9L)));
+                output.accept(GolemItem.create(new GolemData(Map.of(GolemCapability.TRANSPORT, 1), 10L)));
+                output.accept(DISCO_BALL_ITEM.get());
+                DANCEFLOOR_ITEMS.values().forEach(item -> output.accept(item.get()));
+                output.accept(GolemItem.create(new GolemData(Map.of(GolemCapability.PARTY, 1), 6L)));
+                output.accept(FIESTA_SHARD.get());
                 output.accept(BURNTMETAL_INGOT.get());
                 parameters.holders().lookup(GolemMaterial.REGISTRY_KEY).ifPresent(materials -> materials.listElements().forEach(material -> {
                     output.accept(GOLEM_HEAD.get().create(material));
@@ -188,6 +258,7 @@ public class crystallomachia {
             event.worldRegistry(GolemMaterial.REGISTRY_KEY, GolemMaterial.CODEC, GolemMaterial.CODEC);
             event.worldRegistry(ForgingRecipe.REGISTRY_KEY, ForgingRecipe.CODEC, ForgingRecipe.CODEC);
             event.worldRegistry(TraitSmeltingRecipe.REGISTRY_KEY, TraitSmeltingRecipe.CODEC, TraitSmeltingRecipe.CODEC);
+            event.worldRegistry(CookingRecipe.REGISTRY_KEY, CookingRecipe.CODEC, CookingRecipe.CODEC);
         });
         BLOCK_ENTITY_TYPES.register(modEventBus);
         // Register the Deferred Register to the mod event bus so tabs get registered

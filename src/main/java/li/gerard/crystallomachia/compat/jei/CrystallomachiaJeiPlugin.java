@@ -16,6 +16,8 @@ import li.gerard.crystallomachia.golem.GolemItem;
 import li.gerard.crystallomachia.golem.GolemMaterial;
 import li.gerard.crystallomachia.golem.GolemPart;
 import li.gerard.crystallomachia.golem.GolemPartItem;
+import li.gerard.crystallomachia.block.StoneDelicacyBlockEntity;
+import li.gerard.crystallomachia.recipe.CookingRecipe;
 import li.gerard.crystallomachia.recipe.ForgingRecipe;
 import li.gerard.crystallomachia.recipe.TraitSmeltingRecipe;
 import net.minecraft.core.Registry;
@@ -46,6 +48,9 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
     public static final IRecipeType<AssemblyRecipe> ASSEMBLY = IRecipeType.create(
             Identifier.fromNamespaceAndPath(crystallomachia.MODID, "assembly"), AssemblyRecipe.class);
 
+    public static final IRecipeType<CookingRecipe> COOKING = IRecipeType.create(
+            Identifier.fromNamespaceAndPath(crystallomachia.MODID, "cooking"), CookingRecipe.class);
+
     public record AssemblyRecipe(Map<GolemPart, ItemStack> parts, ItemStack golem) {}
 
     @Override
@@ -61,6 +66,8 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
                         Component.translatable("block.crystallomachia.forge_station"), crystallomachia.FORGE_STATION_ITEM.get(), 150, 44),
                 new WorkstationCategory<>(helpers, TRAIT_SMELTING, CrystallomachiaJeiPlugin::traitSmeltingUI,
                         Component.translatable("jei.crystallomachia.trait_smelting"), crystallomachia.GOLEM_FURNACE_ITEM.get(), 150, 44),
+                new WorkstationCategory<>(helpers, COOKING, CrystallomachiaJeiPlugin::cookingUI,
+                        Component.translatable("block.crystallomachia.stone_delicacy"), crystallomachia.STONE_DELICACY_ITEM.get(), 150, 44),
                 new WorkstationCategory<>(helpers, ASSEMBLY, CrystallomachiaJeiPlugin::assemblyUI,
                         Component.translatable("block.crystallomachia.golem_assembler"), crystallomachia.GOLEM_ASSEMBLER_ITEM.get(), 160, 70));
     }
@@ -69,6 +76,7 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
     public void registerRecipes(IRecipeRegistration registration) {
         registration.addRecipes(FORGING, registryValues(ForgingRecipe.REGISTRY_KEY));
         registration.addRecipes(TRAIT_SMELTING, registryValues(TraitSmeltingRecipe.REGISTRY_KEY));
+        registration.addRecipes(COOKING, registryValues(CookingRecipe.REGISTRY_KEY));
         registration.addRecipes(ASSEMBLY, assemblyRecipes());
     }
 
@@ -77,6 +85,7 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
         registration.addCraftingStation(RecipeTypes.SMELTING, crystallomachia.GOLEM_FURNACE_ITEM.get());
         registration.addCraftingStation(TRAIT_SMELTING, crystallomachia.GOLEM_FURNACE_ITEM.get());
         registration.addCraftingStation(FORGING, crystallomachia.FORGE_STATION_ITEM.get());
+        registration.addCraftingStation(COOKING, crystallomachia.STONE_DELICACY_ITEM.get());
         registration.addCraftingStation(ASSEMBLY, crystallomachia.GOLEM_ASSEMBLER_ITEM.get());
     }
 
@@ -137,6 +146,14 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
                 JeiRecipeUI.output(recipe.result().create()));
     }
 
+    private static ModularUI cookingUI(CookingRecipe recipe) {
+        return JeiRecipeUI.page(
+                JeiRecipeUI.roles(List.of(StoneDelicacyBlockEntity.COOK_ROLE)),
+                JeiRecipeUI.input(recipe.input()),
+                JeiRecipeUI.arrow(),
+                JeiRecipeUI.output(recipe.result().create()));
+    }
+
     private static ModularUI assemblyUI(AssemblyRecipe recipe) {
         UIElement parts = JeiRecipeUI.column(1).addChildren(
                 JeiRecipeUI.input(recipe.parts().get(GolemPart.HEAD)),
@@ -148,6 +165,7 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
         return JeiRecipeUI.page(
                 JeiRecipeUI.roles(GolemAssemblerBlockEntity.GOLEM_ROLES),
                 parts,
+                JeiRecipeUI.input(new ItemStack(crystallomachia.GOLEM_CORE.get())),
                 JeiRecipeUI.arrow(),
                 JeiRecipeUI.output(recipe.golem()));
     }

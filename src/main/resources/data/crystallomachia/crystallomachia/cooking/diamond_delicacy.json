@@ -1,0 +1,5 @@
+{
+  "input": ["minecraft:diamond", "minecraft:diamond_ore", "minecraft:deepslate_diamond_ore"],
+  "result": "crystallomachia:diamond_delicacy",
+  "work": 600
+}

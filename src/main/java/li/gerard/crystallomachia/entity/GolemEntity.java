@@ -8,6 +8,7 @@ import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
+import li.gerard.crystallomachia.golem.GolemCoreItem;
 import li.gerard.crystallomachia.golem.GolemData;
 import li.gerard.crystallomachia.golem.GolemMaterial;
 import li.gerard.crystallomachia.golem.GolemPart;
@@ -44,7 +45,9 @@ import net.neoforged.neoforge.entity.IEntityWithComplexSpawn;
 
 public class GolemEntity extends Monster implements IEntityWithComplexSpawn {
     private static final int MAX_DROPPED_PARTS = 2;
+    private static final float CORE_DROP_CHANCE = 0.25f;
 
+    private @Nullable GolemData core;
     private GolemParts parts = GolemParts.EMPTY;
     private GolemData golemData = GolemData.EMPTY;
 
@@ -124,12 +127,17 @@ public class GolemEntity extends Monster implements IEntityWithComplexSpawn {
             materials.put(part, material.key());
             contributions.add(material.value().contribution(part));
         }
+        this.core = GolemCoreItem.wild(random);
+        contributions.add(this.core);
         setGolem(GolemData.combine(contributions, random.nextLong()), new GolemParts(materials), true);
     }
 
     @Override
     protected void dropCustomDeathLoot(ServerLevel level, DamageSource source, boolean killedByPlayer) {
         super.dropCustomDeathLoot(level, source, killedByPlayer);
+        if (level.getRandom().nextFloat() < CORE_DROP_CHANCE) {
+            spawnAtLocation(level, GolemCoreItem.create(this.core != null ? this.core : GolemCoreItem.wild(level.getRandom())));
+        }
         List<GolemPart> available = new ArrayList<>(this.parts.materials().keySet());
         Collections.shuffle(available, new java.util.Random(level.getRandom().nextLong()));
         int count = Math.min(available.size(), level.getRandom().nextInt(MAX_DROPPED_PARTS + 1));
@@ -148,12 +156,16 @@ public class GolemEntity extends Monster implements IEntityWithComplexSpawn {
         super.addAdditionalSaveData(output);
         output.store("golem_data", GolemData.CODEC, this.golemData);
         output.store("golem_parts", GolemParts.CODEC, this.parts);
+        if (this.core != null) {
+            output.store("golem_core", GolemData.CODEC, this.core);
+        }
     }
 
     @Override
     protected void readAdditionalSaveData(ValueInput input) {
         super.readAdditionalSaveData(input);
         GolemParts savedParts = input.read("golem_parts", GolemParts.CODEC).orElse(GolemParts.EMPTY);
+        this.core = input.read("golem_core", GolemData.CODEC).orElse(null);
         input.read("golem_data", GolemData.CODEC).ifPresent(data -> setGolem(data, savedParts, false));
     }
 

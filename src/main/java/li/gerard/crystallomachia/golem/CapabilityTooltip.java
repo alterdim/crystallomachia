@@ -6,7 +6,11 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 
-public record CapabilityTooltip(List<Line> lines) implements TooltipComponent {
+public record CapabilityTooltip(List<Line> stats, List<Line> lines) implements TooltipComponent {
+    public CapabilityTooltip(List<Line> lines) {
+        this(List.of(), lines);
+    }
+
     public record Line(Identifier icon, Component text) {
         public Line(GolemCapability capability, Component text) {
             this(capability.icon(), text);

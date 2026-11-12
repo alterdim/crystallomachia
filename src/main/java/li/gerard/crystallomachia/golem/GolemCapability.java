@@ -13,7 +13,12 @@ import net.minecraft.util.StringRepresentable;
 public enum GolemCapability implements StringRepresentable {
     HEAT("heat", "sprites/heat.png"),
     HANDWORK("handwork", "sprites/handwork.png"),
-    PRECISION("precision", "sprites/precision.png");
+    PRECISION("precision", "sprites/precision.png"),
+    PARTY("party", "minecraft:textures/item/firework_rocket.png"),
+    FREEZING("freezing", "minecraft:textures/item/snowball.png"),
+    STRENGTH("strength", "minecraft:textures/item/mace.png"),
+    COOKING("cooking", "minecraft:textures/item/cooked_beef.png"),
+    TRANSPORT("transport", "minecraft:textures/item/minecart.png");
 
     public static final int ICON_SIZE = 12;
 
@@ -26,7 +31,7 @@ public enum GolemCapability implements StringRepresentable {
 
     GolemCapability(String name, String iconPath) {
         this.name = name;
-        this.icon = Identifier.fromNamespaceAndPath(crystallomachia.MODID, iconPath);
+        this.icon = iconPath.contains(":") ? Identifier.parse(iconPath) : Identifier.fromNamespaceAndPath(crystallomachia.MODID, iconPath);
     }
 
     @Override

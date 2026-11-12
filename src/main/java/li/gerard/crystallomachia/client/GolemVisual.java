@@ -16,12 +16,13 @@ import com.geckolib.util.GeckoLibUtil;
 
 import li.gerard.crystallomachia.block.AbstractWorkstationBlockEntity;
 import li.gerard.crystallomachia.golem.GolemData;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 
 public class GolemVisual implements GeoAnimatable {
     private static final RawAnimation IDLE = RawAnimation.begin().thenLoop("idle");
     private static final RawAnimation WORK = RawAnimation.begin().thenLoop("work_heat");
-    private static final Map<AbstractWorkstationBlockEntity, GolemVisual[]> VISUALS = new WeakHashMap<>();
+    private static final Map<BlockEntity, GolemVisual[]> VISUALS = new WeakHashMap<>();
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this, false);
     private final Set<String> trackedBones = ConcurrentHashMap.newKeySet();
@@ -32,7 +33,11 @@ public class GolemVisual implements GeoAnimatable {
     private float yaw;
 
     public static GolemVisual get(AbstractWorkstationBlockEntity workstation, int slot) {
-        GolemVisual[] slots = VISUALS.computeIfAbsent(workstation, key -> new GolemVisual[key.golemSlots()]);
+        return get(workstation, workstation.golemSlots(), slot);
+    }
+
+    public static GolemVisual get(BlockEntity owner, int slotCount, int slot) {
+        GolemVisual[] slots = VISUALS.computeIfAbsent(owner, key -> new GolemVisual[slotCount]);
         if (slots[slot] == null) {
             slots[slot] = new GolemVisual();
         }

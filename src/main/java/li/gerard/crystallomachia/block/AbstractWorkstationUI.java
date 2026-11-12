@@ -122,13 +122,15 @@ public abstract class AbstractWorkstationUI<T extends AbstractWorkstationBlockEn
     private void onSpeedTooltip(UIEvent event) {
         List<Component> lines = new ArrayList<>();
         lines.add(Component.translatable("gui.crystallomachia.speed.title", GolemData.formatSpeed(this.workstation.workSpeed())));
-        if (!this.workstation.meetsRequirements()) {
+        if (this.workstation.hasStarvingGolem()) {
+            lines.add(Component.translatable("gui.crystallomachia.speed.hungry").withStyle(ChatFormatting.RED));
+        } else if (!this.workstation.meetsRequirements()) {
             lines.add(Component.translatable("gui.crystallomachia.speed.unmet").withStyle(ChatFormatting.RED));
         }
         for (int slot = 0; slot < this.workstation.golemSlots(); slot++) {
             if (!this.workstation.getStack(slot).isEmpty()) {
                 lines.add(Component.translatable("gui.crystallomachia.speed.detail", slot + 1,
-                        GolemData.formatSpeed(this.workstation.golem(slot).speed())).withStyle(ChatFormatting.GRAY));
+                        GolemData.formatSpeed(this.workstation.golemSpeed(slot))).withStyle(ChatFormatting.GRAY));
             }
         }
         event.hoverTooltips = HoverTooltips.create(lines.toArray());

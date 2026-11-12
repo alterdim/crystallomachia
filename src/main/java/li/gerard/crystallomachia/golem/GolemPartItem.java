@@ -59,6 +59,6 @@ public class GolemPartItem extends Item {
 
     @Override
     public Optional<TooltipComponent> getTooltipImage(ItemStack stack) {
-        return GolemItem.capabilityTooltip(GolemItem.getData(stack));
+        return GolemItem.capabilityTooltip(stack);
     }
 }

@@ -15,6 +15,7 @@ import com.lowdragmc.lowdraglib2.syncdata.storage.IManagedStorage;
 import li.gerard.crystallomachia.golem.GolemAnchor;
 import li.gerard.crystallomachia.golem.GolemCapability;
 import li.gerard.crystallomachia.golem.GolemData;
+import li.gerard.crystallomachia.golem.GolemHunger;
 import li.gerard.crystallomachia.golem.GolemItem;
 import li.gerard.crystallomachia.golem.GolemRole;
 import li.gerard.crystallomachia.golem.GolemTrait;
@@ -33,6 +34,8 @@ import net.neoforged.neoforge.transfer.item.ItemStacksResourceHandler;
 public abstract class AbstractWorkstationBlockEntity extends BlockEntity implements ISyncPersistRPCBlockEntity {
     public static Consumer<AbstractWorkstationBlockEntity> CLIENT_TICK = workstation -> {};
 
+    private static final int HUNGER_INTERVAL = 20;
+
     protected final List<GolemRole> golemRoles;
     protected final int golemSlots;
 
@@ -49,6 +52,8 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
     @Persisted
     @DescSynced
     protected float maxProgress;
+
+    private int hungerTicks;
 
     protected AbstractWorkstationBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, List<GolemRole> golemRoles, int otherSlots) {
         super(type, pos, state);
@@ -156,9 +161,31 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
         return GolemItem.getData(getStack(slot));
     }
 
+    protected boolean isRequired(int slot) {
+        return true;
+    }
+
+    public boolean isStarving(int slot) {
+        ItemStack stack = getStack(slot);
+        return stack.getItem() instanceof GolemItem && !GolemHunger.of(stack).isFed();
+    }
+
+    public boolean hasStarvingGolem() {
+        for (int slot = 0; slot < this.golemSlots; slot++) {
+            if (isRequired(slot) && isStarving(slot)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public float golemSpeed(int slot) {
+        return GolemHunger.workSpeed(getStack(slot));
+    }
+
     public boolean meetsRequirements() {
         for (int slot = 0; slot < this.golemSlots; slot++) {
-            if (!golemRole(slot).isMetBy(golem(slot))) {
+            if (isRequired(slot) && (!golemRole(slot).isMetBy(golem(slot)) || isStarving(slot))) {
                 return false;
             }
         }
@@ -171,7 +198,9 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
         }
         float speed = 0f;
         for (int slot = 0; slot < this.golemSlots; slot++) {
-            speed += golem(slot).speed();
+            if (isRequired(slot)) {
+                speed += golemSpeed(slot);
+            }
         }
         return speed;
     }
@@ -183,6 +212,16 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
     protected boolean advanceProgress(float work) {
         this.maxProgress = work;
         this.progress += workSpeed();
+        if (++this.hungerTicks >= HUNGER_INTERVAL) {
+            this.hungerTicks = 0;
+            for (int slot = 0; slot < this.golemSlots; slot++) {
+                ItemStack stack = getStack(slot);
+                if (isRequired(slot) && stack.getItem() instanceof GolemItem) {
+                    GolemHunger.work(stack, HUNGER_INTERVAL);
+                    setStack(slot, stack);
+                }
+            }
+        }
         setChanged();
         if (this.progress >= this.maxProgress) {
             this.progress = 0;
