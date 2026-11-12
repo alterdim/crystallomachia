@@ -16,11 +16,12 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.tags.TagKey;
 import net.minecraft.util.ExtraCodecs;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.level.biome.Biome;
 
 public record GolemMaterial(int color, Map<GolemCapability, Integer> capabilities, Optional<Identifier> texture,
-        Map<GolemPart, List<GolemTrait>> traits, float speed, float health, float attack, float armor, float stomach, float efficiency,
-        Optional<TagKey<Biome>> spawnBiomes) {
+        Map<GolemPart, List<GolemTrait>> traits, List<GolemTrait> lockedTraits, float speed, float intelligence, float health, float attack, float armor, float stomach, float efficiency,
+        Optional<TagKey<Biome>> spawnBiomes, Optional<Ingredient> ingredient) {
     public static final ResourceKey<Registry<GolemMaterial>> REGISTRY_KEY = ResourceKey.createRegistryKey(
             Identifier.fromNamespaceAndPath(crystallomachia.MODID, "golem_material"));
 
@@ -29,13 +30,16 @@ public record GolemMaterial(int color, Map<GolemCapability, Integer> capabilitie
             Codec.unboundedMap(GolemCapability.CODEC, Codec.INT).optionalFieldOf("capabilities", Map.of()).forGetter(GolemMaterial::capabilities),
             Identifier.CODEC.optionalFieldOf("texture").forGetter(GolemMaterial::texture),
             Codec.unboundedMap(GolemPart.CODEC, GolemTrait.CODEC.listOf()).optionalFieldOf("traits", Map.of()).forGetter(GolemMaterial::traits),
+            GolemTrait.CODEC.listOf().optionalFieldOf("locked_traits", List.of()).forGetter(GolemMaterial::lockedTraits),
             Codec.FLOAT.optionalFieldOf("speed", GolemData.DEFAULT_SPEED).forGetter(GolemMaterial::speed),
+            Codec.FLOAT.optionalFieldOf("intelligence", GolemData.DEFAULT_INTELLIGENCE).forGetter(GolemMaterial::intelligence),
             Codec.FLOAT.optionalFieldOf("health", 4f).forGetter(GolemMaterial::health),
             Codec.FLOAT.optionalFieldOf("attack", 1f).forGetter(GolemMaterial::attack),
             Codec.FLOAT.optionalFieldOf("armor", 0f).forGetter(GolemMaterial::armor),
             Codec.FLOAT.optionalFieldOf("stomach", 20f).forGetter(GolemMaterial::stomach),
             Codec.FLOAT.optionalFieldOf("efficiency", 1f).forGetter(GolemMaterial::efficiency),
-            TagKey.hashedCodec(Registries.BIOME).optionalFieldOf("spawn_biomes").forGetter(GolemMaterial::spawnBiomes)
+            TagKey.hashedCodec(Registries.BIOME).optionalFieldOf("spawn_biomes").forGetter(GolemMaterial::spawnBiomes),
+            Ingredient.CODEC.optionalFieldOf("ingredient").forGetter(GolemMaterial::ingredient)
     ).apply(instance, GolemMaterial::new));
 
     public int level(GolemCapability capability) {
@@ -45,7 +49,7 @@ public record GolemMaterial(int color, Map<GolemCapability, Integer> capabilitie
     public GolemData contribution(GolemPart part) {
         GolemCapability capability = part.capability();
         Map<GolemCapability, Integer> levels = capability == null || level(capability) <= 0 ? Map.of() : Map.of(capability, level(capability));
-        return new GolemData(levels, this.traits.getOrDefault(part, List.of()), this.speed,
+        return new GolemData(levels, this.traits.getOrDefault(part, List.of()), this.speed, part == GolemPart.HEAD ? this.intelligence : 0f,
                 new GolemCombat(this.health, this.attack, this.armor), new GolemAppetite(this.stomach, this.efficiency), 0L);
     }
 

@@ -26,6 +26,7 @@ import li.gerard.crystallomachia.block.GolemAssemblerBlockEntity;
 import java.util.EnumMap;
 import java.util.List;
 import li.gerard.crystallomachia.golem.GolemParts;
+import li.gerard.crystallomachia.golem.GolemTier;
 import li.gerard.crystallomachia.entity.GolemEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -117,6 +118,9 @@ public class crystallomachia {
 
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<GolemHunger>> GOLEM_HUNGER = DATA_COMPONENTS.registerComponentType("golem_hunger",
             builder -> builder.persistent(GolemHunger.CODEC).networkSynchronized(GolemHunger.STREAM_CODEC));
+
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<GolemTier>> GOLEM_TIER = DATA_COMPONENTS.registerComponentType("golem_tier",
+            builder -> builder.persistent(GolemTier.CODEC).networkSynchronized(GolemTier.STREAM_CODEC));
 
     public static final DeferredItem<GolemCoreItem> GOLEM_CORE = ITEMS.registerItem("golem_core", GolemCoreItem::new);
 

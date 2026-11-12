@@ -29,6 +29,7 @@ import li.gerard.crystallomachia.golem.GolemData;
 import li.gerard.crystallomachia.golem.GolemItem;
 import li.gerard.crystallomachia.golem.GolemRole;
 import li.gerard.crystallomachia.golem.GolemStat;
+import li.gerard.crystallomachia.golem.GolemTier;
 import li.gerard.crystallomachia.golem.GolemTrait;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -93,8 +94,13 @@ public class CoreExtractorBlockEntity extends AbstractWorkstationBlockEntity {
         }
         if (advanceProgress(WORK)) {
             this.confirmedGolem = ItemStack.EMPTY;
+            ItemStack core = GolemCoreItem.create(extraction.roll(level.getRandom()));
+            GolemTier tier = getStack(INPUT_SLOT).get(crystallomachia.GOLEM_TIER.get());
+            if (tier != null) {
+                core.set(crystallomachia.GOLEM_TIER.get(), tier);
+            }
             consume(INPUT_SLOT, 1);
-            setStack(OUTPUT_SLOT, GolemCoreItem.create(extraction.roll(level.getRandom())));
+            setStack(OUTPUT_SLOT, core);
         }
     }
 
@@ -117,7 +123,7 @@ public class CoreExtractorBlockEntity extends AbstractWorkstationBlockEntity {
         scroller.addScrollViewChild(new Label().setText(Component.translatable("gui.crystallomachia.preview").withStyle(ChatFormatting.GRAY)));
 
         List<Runnable> updates = new ArrayList<>();
-        GolemStat[] stats = GolemStat.values();
+        GolemStat[] stats = GolemStat.coreStats();
         for (int first = 0; first < stats.length; first += 2) {
             UIElement statRow = row(0);
             for (int index = first; index < Math.min(first + 2, stats.length); index++) {

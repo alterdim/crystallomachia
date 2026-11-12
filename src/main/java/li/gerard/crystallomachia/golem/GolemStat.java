@@ -1,5 +1,6 @@
 package li.gerard.crystallomachia.golem;
 
+import java.util.Arrays;
 import java.util.Locale;
 import java.util.function.Function;
 
@@ -9,6 +10,7 @@ import net.minecraft.resources.Identifier;
 
 public enum GolemStat {
     SPEED("textures/mob_effect/speed.png", GolemData::speed),
+    INTELLIGENCE("textures/item/book.png", GolemData::intelligence),
     HEALTH("textures/gui/sprites/hud/heart/full.png", data -> data.combat().health()),
     ATTACK("textures/mob_effect/strength.png", data -> data.combat().attack()),
     ARMOR("textures/gui/sprites/hud/armor_full.png", data -> data.combat().armor()),
@@ -23,6 +25,10 @@ public enum GolemStat {
     GolemStat(String icon, Function<GolemData, Float> getter) {
         this.icon = Identifier.withDefaultNamespace(icon);
         this.getter = getter;
+    }
+
+    public static GolemStat[] coreStats() {
+        return Arrays.stream(values()).filter(stat -> stat != INTELLIGENCE).toArray(GolemStat[]::new);
     }
 
     public Identifier icon() {

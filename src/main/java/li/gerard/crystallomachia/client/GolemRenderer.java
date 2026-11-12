@@ -27,6 +27,7 @@ public class GolemRenderer extends GeoObjectRenderer<GolemVisual, Void, GeoRende
             "arm_l", GolemPart.HAND_LEFT,
             "arm_r", GolemPart.HAND_RIGHT,
             "legs", GolemPart.LEGS);
+    private static final String HEAD_BONE = "head";
     private static final int MAX_MODULE_LEVEL = 5;
     private static final float SCALE = 1.2f;
 
@@ -67,6 +68,8 @@ public class GolemRenderer extends GeoObjectRenderer<GolemVisual, Void, GeoRende
                         bone -> bone.skipRender(hidden).skipChildrenRender(hidden));
             }
         }
+        float headScale = data.headScale();
+        snapshots.ifPresent(HEAD_BONE, bone -> bone.setScale(bone.getScaleX() * headScale, bone.getScaleY() * headScale, bone.getScaleZ() * headScale));
         GolemPass pass = renderPassInfo.getGeckolibData(PASS);
         if (pass == null) {
             return;

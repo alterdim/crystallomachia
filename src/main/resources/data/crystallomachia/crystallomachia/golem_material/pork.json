@@ -1,0 +1,12 @@
+{
+  "ingredient": "minecraft:porkchop",
+  "color": "#F2A6A0",
+  "capabilities": { "heat": 1, "handwork": 1 },
+  "traits": { "hand_left": ["hasty_cook"], "hand_right": ["hasty_cook"] },
+  "speed": 1.2,
+  "intelligence": 3,
+  "health": 3,
+  "attack": 1,
+  "armor": 0,
+  "stomach": 30
+}

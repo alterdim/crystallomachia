@@ -12,6 +12,7 @@ import li.gerard.crystallomachia.crystallomachia;
 import li.gerard.crystallomachia.block.ForgeStationBlockEntity;
 import li.gerard.crystallomachia.block.GolemAssemblerBlockEntity;
 import li.gerard.crystallomachia.block.GolemFurnaceBlockEntity;
+import li.gerard.crystallomachia.golem.CrudeProduct;
 import li.gerard.crystallomachia.golem.GolemItem;
 import li.gerard.crystallomachia.golem.GolemMaterial;
 import li.gerard.crystallomachia.golem.GolemPart;
@@ -51,7 +52,12 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
     public static final IRecipeType<CookingRecipe> COOKING = IRecipeType.create(
             Identifier.fromNamespaceAndPath(crystallomachia.MODID, "cooking"), CookingRecipe.class);
 
+    public static final IRecipeType<CrudeForgingRecipe> CRUDE_FORGING = IRecipeType.create(
+            Identifier.fromNamespaceAndPath(crystallomachia.MODID, "crude_forging"), CrudeForgingRecipe.class);
+
     public record AssemblyRecipe(Map<GolemPart, ItemStack> parts, ItemStack golem) {}
+
+    public record CrudeForgingRecipe(Holder.Reference<GolemMaterial> material, CrudeProduct product) {}
 
     @Override
     public Identifier getPluginUid() {
@@ -64,6 +70,8 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
         registration.addRecipeCategories(
                 new WorkstationCategory<>(helpers, FORGING, CrystallomachiaJeiPlugin::forgingUI,
                         Component.translatable("block.crystallomachia.forge_station"), crystallomachia.FORGE_STATION_ITEM.get(), 150, 44),
+                new WorkstationCategory<>(helpers, CRUDE_FORGING, CrystallomachiaJeiPlugin::crudeForgingUI,
+                        Component.translatable("jei.crystallomachia.crude_forging"), crystallomachia.FORGE_STATION_ITEM.get(), 150, 44),
                 new WorkstationCategory<>(helpers, TRAIT_SMELTING, CrystallomachiaJeiPlugin::traitSmeltingUI,
                         Component.translatable("jei.crystallomachia.trait_smelting"), crystallomachia.GOLEM_FURNACE_ITEM.get(), 150, 44),
                 new WorkstationCategory<>(helpers, COOKING, CrystallomachiaJeiPlugin::cookingUI,
@@ -75,6 +83,7 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
         registration.addRecipes(FORGING, registryValues(ForgingRecipe.REGISTRY_KEY));
+        registration.addRecipes(CRUDE_FORGING, crudeForgingRecipes());
         registration.addRecipes(TRAIT_SMELTING, registryValues(TraitSmeltingRecipe.REGISTRY_KEY));
         registration.addRecipes(COOKING, registryValues(CookingRecipe.REGISTRY_KEY));
         registration.addRecipes(ASSEMBLY, assemblyRecipes());
@@ -85,6 +94,7 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
         registration.addCraftingStation(RecipeTypes.SMELTING, crystallomachia.GOLEM_FURNACE_ITEM.get());
         registration.addCraftingStation(TRAIT_SMELTING, crystallomachia.GOLEM_FURNACE_ITEM.get());
         registration.addCraftingStation(FORGING, crystallomachia.FORGE_STATION_ITEM.get());
+        registration.addCraftingStation(CRUDE_FORGING, crystallomachia.FORGE_STATION_ITEM.get());
         registration.addCraftingStation(COOKING, crystallomachia.STONE_DELICACY_ITEM.get());
         registration.addCraftingStation(ASSEMBLY, crystallomachia.GOLEM_ASSEMBLER_ITEM.get());
     }
@@ -116,6 +126,30 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
             recipes.add(new AssemblyRecipe(parts, GolemItem.createFromMaterials(materialsByPart, 0L)));
         }));
         return recipes;
+    }
+
+    private static List<CrudeForgingRecipe> crudeForgingRecipes() {
+        List<CrudeForgingRecipe> recipes = new ArrayList<>();
+        ClientPacketListener connection = Minecraft.getInstance().getConnection();
+        if (connection == null) {
+            return recipes;
+        }
+        connection.registryAccess().lookup(GolemMaterial.REGISTRY_KEY).ifPresent(materials -> materials.listElements()
+                .filter(material -> material.value().ingredient().isPresent())
+                .forEach(material -> {
+                    for (CrudeProduct product : CrudeProduct.values()) {
+                        recipes.add(new CrudeForgingRecipe(material, product));
+                    }
+                }));
+        return recipes;
+    }
+
+    private static ModularUI crudeForgingUI(CrudeForgingRecipe recipe) {
+        return JeiRecipeUI.page(
+                JeiRecipeUI.roles(ForgeStationBlockEntity.CRUDE_ROLES),
+                JeiRecipeUI.input(recipe.material().value().ingredient().orElseThrow(), recipe.product().cost()),
+                JeiRecipeUI.arrow(),
+                JeiRecipeUI.output(recipe.product().create(recipe.material())));
     }
 
     private static GolemPartItem partItem(GolemPart part) {

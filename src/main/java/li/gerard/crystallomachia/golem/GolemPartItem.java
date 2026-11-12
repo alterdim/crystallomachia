@@ -43,6 +43,13 @@ public class GolemPartItem extends Item {
         return stack;
     }
 
+    public ItemStack create(Holder.Reference<GolemMaterial> material, GolemTier tier) {
+        ItemStack stack = create(material);
+        stack.set(crystallomachia.GOLEM_DATA.get(), material.value().contribution(this.part).capped(tier));
+        stack.set(crystallomachia.GOLEM_TIER.get(), tier);
+        return stack;
+    }
+
     @Override
     public Component getName(ItemStack stack) {
         ResourceKey<GolemMaterial> material = stack.get(crystallomachia.GOLEM_MATERIAL.get());

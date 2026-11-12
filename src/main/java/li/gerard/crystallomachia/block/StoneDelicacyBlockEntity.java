@@ -20,6 +20,7 @@ import li.gerard.crystallomachia.golem.GolemFoodItem;
 import li.gerard.crystallomachia.golem.GolemHunger;
 import li.gerard.crystallomachia.golem.GolemPose;
 import li.gerard.crystallomachia.golem.GolemRole;
+import li.gerard.crystallomachia.golem.GolemTrait;
 import li.gerard.crystallomachia.golem.WorkEffect;
 import li.gerard.crystallomachia.recipe.CookingRecipe;
 import net.minecraft.core.BlockPos;
@@ -40,6 +41,8 @@ public class StoneDelicacyBlockEntity extends AbstractWorkstationBlockEntity {
     public static final List<GolemRole> GOLEM_ROLES = List.of(COOK_ROLE, TRANSPORT_ROLE);
     public static final float WORK_PER_BLOCK = 5f;
     public static final int MEALS_PER_TRIP = 4;
+    public static final float HASTY_SPEED = 2f;
+    public static final float HASTY_WASTE_CHANCE = 0.33f;
     private static final int DISPATCH_INTERVAL = 100;
     private static final int HUNGER_INTERVAL = 20;
     private static final double TRIP_RENDER_REACH = 96;
@@ -79,6 +82,22 @@ public class StoneDelicacyBlockEntity extends AbstractWorkstationBlockEntity {
     @Override
     protected boolean isRequired(int slot) {
         return slot == COOK_SLOT;
+    }
+
+    @Override
+    public List<GolemTrait> supportedTraits() {
+        return List.of(GolemTrait.HASTY_COOK);
+    }
+
+    @Override
+    public boolean hasActiveTrait(GolemTrait trait) {
+        return supportedTraits().contains(trait) && golem(COOK_SLOT).hasTrait(trait);
+    }
+
+    @Override
+    public float workSpeed() {
+        float speed = super.workSpeed();
+        return hasActiveTrait(GolemTrait.HASTY_COOK) ? speed * HASTY_SPEED : speed;
     }
 
     public boolean hasTransportGolem() {
@@ -171,7 +190,9 @@ public class StoneDelicacyBlockEntity extends AbstractWorkstationBlockEntity {
         }
         if (advanceProgress(recipe.work())) {
             consume(INPUT_SLOT, 1);
-            addOutput(OUTPUT_SLOT, result);
+            if (!hasActiveTrait(GolemTrait.HASTY_COOK) || level.getRandom().nextFloat() >= HASTY_WASTE_CHANCE) {
+                addOutput(OUTPUT_SLOT, result);
+            }
         }
     }
 

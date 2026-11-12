@@ -73,12 +73,17 @@ public class GolemItem extends Item {
         if (!appendSpeed(stack, builder, flag)) {
             return;
         }
+        GolemData data = getData(stack);
+        builder.accept(Component.translatable("tooltip.crystallomachia.trait_slots", data.traits().size(), data.traitSlots()).withStyle(ChatFormatting.GRAY));
         GolemHunger hunger = GolemHunger.of(stack);
         builder.accept(Component.translatable("tooltip.crystallomachia.food", GolemData.formatStat(hunger.food()), GolemData.formatStat(GolemHunger.stomach(stack)))
                 .withStyle(hunger.isFed() ? ChatFormatting.GRAY : ChatFormatting.RED));
         if (hunger.boostTicks() > 0) {
             builder.accept(Component.translatable("tooltip.crystallomachia.golem_food.boost",
                     GolemData.formatStat((hunger.boost() - 1f) * 100f), GolemData.formatStat(hunger.boostTicks() / 20f)).withStyle(ChatFormatting.GOLD));
+        }
+        if (!flag.hasControlDown()) {
+            return;
         }
         GolemParts parts = getParts(stack);
         for (GolemPart part : GolemPart.values()) {
@@ -128,12 +133,20 @@ public class GolemItem extends Item {
             builder.accept(Component.translatable("tooltip.crystallomachia.hold_shift").withStyle(ChatFormatting.DARK_GRAY));
             return false;
         }
+        GolemTier tier = stack.get(crystallomachia.GOLEM_TIER.get());
+        if (tier != null) {
+            builder.accept(Component.translatable("tooltip.crystallomachia.tier", tier.displayName()).withStyle(ChatFormatting.GRAY));
+        }
         return true;
     }
 
     @Override
     public Optional<TooltipComponent> getTooltipImage(ItemStack stack) {
         return capabilityTooltip(stack);
+    }
+
+    private static boolean showsIntelligence(ItemStack stack) {
+        return stack.getItem() instanceof GolemItem || stack.getItem() instanceof GolemPartItem partItem && partItem.part() == GolemPart.HEAD;
     }
 
     public static Optional<TooltipComponent> capabilityTooltip(ItemStack stack) {
@@ -143,18 +156,22 @@ public class GolemItem extends Item {
         GolemData data = getData(stack);
         List<CapabilityTooltip.Line> stats = new ArrayList<>();
         for (GolemStat stat : GolemStat.values()) {
+            if (stat == GolemStat.INTELLIGENCE && !showsIntelligence(stack)) {
+                continue;
+            }
             stats.add(new CapabilityTooltip.Line(stat.icon(), Component.literal(stat.format(data)).withStyle(ChatFormatting.GRAY)));
         }
+        List<CapabilityTooltip.Line> capabilities = new ArrayList<>();
         List<CapabilityTooltip.Line> lines = new ArrayList<>();
         for (GolemCapability capability : GolemCapability.values()) {
             int level = data.level(capability);
             if (level > 0) {
-                lines.add(new CapabilityTooltip.Line(capability, Component.literal(Integer.toString(level)).withStyle(ChatFormatting.GRAY)));
+                capabilities.add(new CapabilityTooltip.Line(capability, Component.literal(Integer.toString(level)).withStyle(ChatFormatting.GRAY)));
             }
         }
         for (GolemTrait trait : data.traits()) {
             lines.add(new CapabilityTooltip.Line(trait, trait.displayName().copy().withStyle(ChatFormatting.GOLD)));
         }
-        return Optional.of(new CapabilityTooltip(stats, lines));
+        return Optional.of(new CapabilityTooltip(stats, capabilities, lines));
     }
 }

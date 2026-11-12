@@ -1,8 +1,10 @@
 {
+  "ingredient": "#minecraft:stone_crafting_materials",
   "color": "#8A8A8A",
   "capabilities": { "heat": 1, "handwork": 1 },
   "texture": "crystallomachia:textures/golem/stone.png",
   "speed": 1.0,
+  "intelligence": 2,
   "health": 4,
   "attack": 1,
   "armor": 0.5

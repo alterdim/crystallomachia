@@ -57,6 +57,7 @@ public record CoreExtraction(GolemData base, Map<GolemCapability, List<Integer>>
                 core == null ? Map.of() : core.capabilities(),
                 core == null ? List.of() : core.traits(),
                 speed / count,
+                0f,
                 new GolemCombat(total.health() / count, total.attack() / count, total.armor() / count),
                 new GolemAppetite(stomach / count, efficiency / count),
                 0L);
@@ -77,7 +78,7 @@ public record CoreExtraction(GolemData base, Map<GolemCapability, List<Integer>>
     private static GolemData asSinglePart(GolemData golem) {
         int partCount = GolemPart.values().length;
         GolemCombat combat = golem.combat();
-        return new GolemData(golem.capabilities(), golem.traits(), golem.speed(),
+        return new GolemData(golem.capabilities(), golem.traits(), golem.speed(), 0f,
                 new GolemCombat(combat.health() / partCount, combat.attack() / partCount, combat.armor() / partCount),
                 new GolemAppetite(golem.appetite().stomach() / partCount, golem.appetite().efficiency()), 0L);
     }
@@ -135,7 +136,7 @@ public record CoreExtraction(GolemData base, Map<GolemCapability, List<Integer>>
         });
         GolemCombat combat = this.base.combat();
         GolemAppetite appetite = this.base.appetite();
-        return new GolemData(capabilities, traits, vary(random, this.base.speed()),
+        return new GolemData(capabilities, traits, vary(random, this.base.speed()), 0f,
                 new GolemCombat(vary(random, combat.health()), vary(random, combat.attack()), vary(random, combat.armor())),
                 new GolemAppetite(vary(random, appetite.stomach()), vary(random, appetite.efficiency())), 0L);
     }

@@ -43,13 +43,17 @@ public final class JeiRecipeUI {
     }
 
     public static UIElement input(Ingredient ingredient) {
-        List<ItemStack> stacks = ingredient.items().map(ItemStack::new).toList();
+        return input(ingredient, 1);
+    }
+
+    public static UIElement input(Ingredient ingredient, int count) {
+        List<ItemStack> stacks = ingredient.items().map(item -> new ItemStack(item, count)).toList();
         if (stacks.isEmpty()) {
             return new ItemSlot();
         }
         return new ItemSlot().setItem(stacks.getFirst())
                 .xeiRecipeIngredient(IngredientIO.INPUT, stacks::stream)
-                .xeiRecipeSlot(IngredientIO.INPUT, 1, 1, stacks::stream);
+                .xeiRecipeSlot(IngredientIO.INPUT, 1, count, stacks::stream);
     }
 
     public static UIElement output(ItemStack stack) {
@@ -58,7 +62,7 @@ public final class JeiRecipeUI {
 
     public static UIElement arrow() {
         return new UIElement().layout(layout -> layout.width(18).height(18))
-                .style(style -> style.backgroundTexture(Icons.RIGHT_ARROW_NO_BAR));
+                .style(style -> style.backgroundTexture(Icons.RIGHT_ARROW_NO_BAR.copy().rotate(-90)));
     }
 
     public static UIElement icon(String texture) {

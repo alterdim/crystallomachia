@@ -55,7 +55,7 @@ public class GolemCoreItem extends Item {
     }
 
     public static GolemData stats(float speed, float health, float attack, float armor, float stomach, float efficiency) {
-        return new GolemData(Map.of(), List.of(), speed, new GolemCombat(health, attack, armor), new GolemAppetite(stomach, efficiency), 0L);
+        return new GolemData(Map.of(), List.of(), speed, 0f, new GolemCombat(health, attack, armor), new GolemAppetite(stomach, efficiency), 0L);
     }
 
     private static float roll(RandomSource random, float min, float max, float maxQuality) {
