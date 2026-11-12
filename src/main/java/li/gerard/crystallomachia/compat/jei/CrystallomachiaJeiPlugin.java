@@ -25,7 +25,11 @@ import net.minecraft.core.Registry;
 import net.minecraft.resources.ResourceKey;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
+import li.gerard.crystallomachia.block.AbstractWorkstationUI;
 import mezz.jei.api.constants.RecipeTypes;
+import mezz.jei.api.constants.VanillaTypes;
+import mezz.jei.api.recipe.RecipeIngredientRole;
+import mezz.jei.api.runtime.IJeiRuntime;
 import mezz.jei.api.helpers.IJeiHelpers;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
@@ -97,6 +101,17 @@ public class CrystallomachiaJeiPlugin implements IModPlugin {
         registration.addCraftingStation(CRUDE_FORGING, crystallomachia.FORGE_STATION_ITEM.get());
         registration.addCraftingStation(COOKING, crystallomachia.STONE_DELICACY_ITEM.get());
         registration.addCraftingStation(ASSEMBLY, crystallomachia.GOLEM_ASSEMBLER_ITEM.get());
+    }
+
+    @Override
+    public void onRuntimeAvailable(IJeiRuntime runtime) {
+        AbstractWorkstationUI.SHOW_RECIPES = station -> runtime.getRecipesGui().show(
+                runtime.getJeiHelpers().getFocusFactory().createFocus(RecipeIngredientRole.CRAFTING_STATION, VanillaTypes.ITEM_STACK, station));
+    }
+
+    @Override
+    public void onRuntimeUnavailable() {
+        AbstractWorkstationUI.SHOW_RECIPES = null;
     }
 
     private static <T> List<T> registryValues(ResourceKey<Registry<T>> key) {

@@ -37,6 +37,8 @@
   "capability.crystallomachia.precision": "Precision",
   "gui.crystallomachia.requirement": "%s/%s",
   "gui.crystallomachia.golem_slot.requires": "Requires:",
+  "gui.crystallomachia.golems": "Golems",
+  "gui.crystallomachia.show_recipes": "Show recipes",
   "gui.crystallomachia.speed": "%s/t",
   "gui.crystallomachia.speed.title": "Work per tick: %s",
   "gui.crystallomachia.speed.unmet": "Requirements not met",

@@ -2,9 +2,13 @@ package li.gerard.crystallomachia.block;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
+
+import org.jspecify.annotations.Nullable;
 
 import com.lowdragmc.lowdraglib2.gui.slot.ItemResourceHandlerSlot;
 import com.lowdragmc.lowdraglib2.gui.sync.bindings.impl.SupplierDataSource;
+import com.lowdragmc.lowdraglib2.gui.texture.IGuiTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 import com.lowdragmc.lowdraglib2.gui.ui.UI;
@@ -28,8 +32,17 @@ import li.gerard.crystallomachia.golem.GolemTrait;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 public abstract class AbstractWorkstationUI<T extends AbstractWorkstationBlockEntity> {
+    private static final int GHOST_ICON_COLOR = 0x50FFFFFF;
+    public static @Nullable Consumer<ItemStack> SHOW_RECIPES;
+
+    private static final int PROGRESS_WIDTH = 56;
+    private static final int PROGRESS_HEIGHT = 16;
+    private static final int PANEL_GAP = 2;
+    private static final int REQUIREMENT_WIDTH = 26;
+
     protected final T workstation;
 
     protected AbstractWorkstationUI(T workstation) {
@@ -39,15 +52,18 @@ public abstract class AbstractWorkstationUI<T extends AbstractWorkstationBlockEn
     protected abstract UIElement createMachineArea();
 
     public ModularUI build(Player player) {
-        UIElement body = row(8).addChildren(createGolemSlots(), createMachineArea());
-        UIElement root = new UIElement().layout(layout -> layout.paddingAll(6).gapAll(4).alignItems(AlignItems.CENTER));
-        root.addChildren(
+        UIElement main = new UIElement().layout(layout -> layout.paddingAll(6).gapAll(4).alignItems(AlignItems.CENTER));
+        main.addChildren(
                 new Label().setText(this.workstation.getBlockState().getBlock().getName()),
-                body,
-                createRequirements(),
+                createMachineArea(),
                 createSpeedIndicator(),
                 new InventorySlots());
-        root.addClass("panel_bg");
+        main.addClass("panel_bg");
+        UIElement root = new UIElement().layout(layout -> layout.flexDirection(FlexDirection.ROW).alignItems(AlignItems.FLEX_START).gapAll(PANEL_GAP));
+        if (this.workstation.golemSlots() > 0) {
+            root.addChild(createGolemPanel());
+        }
+        root.addChild(main);
         return new ModularUI(UI.of(root, StylesheetManager.INSTANCE.getStylesheetSafe(StylesheetManager.MC)), player);
     }
 
@@ -68,19 +84,43 @@ public abstract class AbstractWorkstationUI<T extends AbstractWorkstationBlockEn
     }
 
     protected UIElement progressArrow() {
-        return new ProgressBar().bindDataSource(SupplierDataSource.of(this.workstation::progressFraction))
-                .layout(layout -> layout.width(40).height(10));
+        ProgressBar bar = new ProgressBar().label(label -> label.setDisplay(false))
+                .bindDataSource(SupplierDataSource.of(this.workstation::progressFraction));
+        bar.layout(layout -> layout.width(PROGRESS_WIDTH).height(PROGRESS_HEIGHT));
+        bar.addEventListener(UIEvents.MOUSE_DOWN, event -> {
+            if (event.button == 0 && SHOW_RECIPES != null) {
+                SHOW_RECIPES.accept(new ItemStack(this.workstation.getBlockState().getBlock()));
+            }
+        });
+        for (UIElement element : List.of(bar, bar.barContainer, bar.barBackground, bar.bar)) {
+            element.addEventListener(UIEvents.HOVER_TOOLTIPS, event -> {
+                if (SHOW_RECIPES != null) {
+                    event.hoverTooltips = HoverTooltips.create(Component.translatable("gui.crystallomachia.show_recipes"));
+                }
+            });
+        }
+        return bar;
     }
 
-    protected UIElement createGolemSlots() {
-        UIElement golems = column(2);
+    protected UIElement createGolemPanel() {
+        UIElement panel = new UIElement().layout(layout -> layout.paddingAll(6).gapAll(4).alignItems(AlignItems.FLEX_START));
+        panel.addChild(new Label().setText(Component.translatable("gui.crystallomachia.golems")));
         for (int slot = 0; slot < this.workstation.golemSlots(); slot++) {
-            int golemSlot = slot;
-            UIElement element = slot(slot);
-            element.addEventListener(UIEvents.HOVER_TOOLTIPS, event -> onGolemSlotTooltip(event, golemSlot));
-            golems.addChild(element);
+            panel.addChild(row(4).addChildren(createGolemSlot(slot), createRequirements(slot)));
         }
-        return golems;
+        panel.addClass("panel_bg");
+        return panel;
+    }
+
+    protected UIElement createGolemSlot(int slot) {
+        ItemSlot element = new ItemSlot().bind(this.workstation.inventory, slot);
+        List<GolemCapability> capabilities = this.workstation.golemRole(slot).capabilities();
+        if (!capabilities.isEmpty()) {
+            IGuiTexture ghost = SpriteTexture.of(capabilities.getFirst().icon().toString()).setColor(GHOST_ICON_COLOR);
+            element.slotStyle(style -> style.slotOverlay(ghost).showSlotOverlayOnlyEmpty(true));
+        }
+        element.addEventListener(UIEvents.HOVER_TOOLTIPS, event -> onGolemSlotTooltip(event, slot));
+        return element;
     }
 
     private void onGolemSlotTooltip(UIEvent event, int slot) {
@@ -135,16 +175,20 @@ public abstract class AbstractWorkstationUI<T extends AbstractWorkstationBlockEn
         }
         event.hoverTooltips = HoverTooltips.create(lines.toArray());
     }
-    protected UIElement createRequirements() {
-        UIElement requirements = column(1);
-        for (int slot = 0; slot < this.workstation.golemSlots(); slot++) {
-            int golemSlot = slot;
-            for (GolemCapability capability : this.workstation.golemRole(slot).capabilities()) {
-                UIElement icon = new UIElement().layout(layout -> layout.width(GolemCapability.ICON_SIZE).height(GolemCapability.ICON_SIZE))
-                        .style(style -> style.backgroundTexture(SpriteTexture.of(capability.icon().toString())));
-                UIElement label = new Label().bindDataSource(SupplierDataSource.of(() -> requirementText(golemSlot, capability)));
-                requirements.addChild(row(3).addChildren(icon, label));
+
+    protected UIElement createRequirements(int slot) {
+        UIElement requirements = new UIElement().layout(layout -> layout.gapAll(1).alignItems(AlignItems.FLEX_START));
+        List<GolemCapability> capabilities = this.workstation.golemRole(slot).capabilities();
+        for (GolemCapability capability : capabilities) {
+            UIElement label = new Label().bindDataSource(SupplierDataSource.of(() -> requirementText(slot, capability)))
+                    .layout(layout -> layout.minWidth(REQUIREMENT_WIDTH).flexShrink(0));
+            if (capabilities.size() == 1) {
+                requirements.addChild(label);
+                continue;
             }
+            UIElement icon = new UIElement().layout(layout -> layout.width(GolemCapability.ICON_SIZE).height(GolemCapability.ICON_SIZE).flexShrink(0))
+                    .style(style -> style.backgroundTexture(SpriteTexture.of(capability.icon().toString())));
+            requirements.addChild(row(3).addChildren(icon, label));
         }
         return requirements;
     }
