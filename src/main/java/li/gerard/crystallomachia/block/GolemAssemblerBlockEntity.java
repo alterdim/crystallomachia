@@ -18,6 +18,10 @@ import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.ItemSlot;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.TextField;
+import com.lowdragmc.lowdraglib2.gui.sync.bindings.impl.DataBindingBuilder;
+import com.lowdragmc.lowdraglib2.syncdata.annotation.Persisted;
+import net.minecraft.core.component.DataComponents;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.inventory.InventorySlots;
 import com.lowdragmc.lowdraglib2.gui.ui.event.HoverTooltips;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
@@ -54,6 +58,19 @@ public class GolemAssemblerBlockEntity extends AbstractWorkstationBlockEntity {
 
     public static final int CORE_SLOT = GolemPart.values().length;
     private static final int SLOT_SIZE = 18;
+    private static final int NAME_FIELD_WIDTH = 58;
+    private static final int MAX_NAME_LENGTH = 32;
+
+    @Persisted
+    private String golemName = "";
+
+    private void setGolemName(String name) {
+        String trimmed = name == null ? "" : name.length() > MAX_NAME_LENGTH ? name.substring(0, MAX_NAME_LENGTH) : name;
+        if (!trimmed.equals(this.golemName)) {
+            this.golemName = trimmed;
+            setChanged();
+        }
+    }
 
     public GolemAssemblerBlockEntity(BlockPos pos, BlockState state) {
         super(crystallomachia.GOLEM_ASSEMBLER_BLOCK_ENTITY.get(), pos, state, GOLEM_ROLES, GolemPart.values().length + 1);
@@ -110,6 +127,10 @@ public class GolemAssemblerBlockEntity extends AbstractWorkstationBlockEntity {
             setStack(partSlot(part), ItemStack.EMPTY);
         }
         setStack(CORE_SLOT, ItemStack.EMPTY);
+        if (!this.golemName.isBlank()) {
+            golem.set(DataComponents.CUSTOM_NAME, Component.literal(this.golemName.trim()));
+            this.golemName = "";
+        }
         setStack(partSlot(GolemPart.TORSO), golem);
     }
 
@@ -156,6 +177,10 @@ public class GolemAssemblerBlockEntity extends AbstractWorkstationBlockEntity {
                 row(2).addChildren(spacer(), partSlotElement(GolemPart.HEAD), coreSlotElement()),
                 row(2).addChildren(partSlotElement(GolemPart.HAND_LEFT), partSlotElement(GolemPart.TORSO), partSlotElement(GolemPart.HAND_RIGHT)),
                 partSlotElement(GolemPart.LEGS),
+                new TextField().setAnyString()
+                        .bind(DataBindingBuilder.string(() -> this.golemName, this::setGolemName).build())
+                        .layout(layout -> layout.width(NAME_FIELD_WIDTH))
+                        .style(style -> style.tooltips(Component.translatable("gui.crystallomachia.golem_name"))),
                 new Button().setText(Component.translatable("gui.crystallomachia.assemble")).setOnServerClick(event -> assemble()));
 
         UIElement root = new UIElement().layout(layout -> layout.paddingAll(6).gapAll(4).alignItems(AlignItems.CENTER));

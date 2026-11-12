@@ -26,6 +26,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.item.ItemEntity;
 import li.gerard.crystallomachia.golem.GolemItem;
 import net.minecraft.core.BlockPos;
+import org.jspecify.annotations.Nullable;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
@@ -83,6 +84,17 @@ public class DiscoBallBlockEntity extends BlockEntity implements ISyncPersistRPC
 
     public GolemData golem(int slot) {
         return GolemItem.getData(getStack(slot));
+    }
+
+    public @Nullable Component golemSpeech(int slot) {
+        ItemStack stack = getStack(slot);
+        if (!isPartyGolem(stack)) {
+            return null;
+        }
+        if (!GolemHunger.of(stack).isFed()) {
+            return Component.translatable("speech.crystallomachia.hungry");
+        }
+        return this.floorDistance > 0 ? Component.translatable("speech.crystallomachia.work.party") : null;
     }
 
     public int floorDistance() {

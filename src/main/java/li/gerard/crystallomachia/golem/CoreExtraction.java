@@ -30,6 +30,9 @@ public record CoreExtraction(GolemData base, Map<GolemCapability, List<Integer>>
                 materials.get(entry.getValue()).ifPresent(material -> parts.add(material.value().contribution(entry.getKey())));
             }
         }
+        if (parts.isEmpty() && core == null && golem.has(crystallomachia.GOLEM_DATA.get())) {
+            parts.add(asSinglePart(GolemItem.getData(golem)));
+        }
         List<GolemData> components = new ArrayList<>(parts);
         if (core != null) {
             components.add(core);
@@ -69,6 +72,14 @@ public record CoreExtraction(GolemData base, Map<GolemCapability, List<Integer>>
             }
         }
         return new CoreExtraction(base, capabilitySources, traitSources);
+    }
+
+    private static GolemData asSinglePart(GolemData golem) {
+        int partCount = GolemPart.values().length;
+        GolemCombat combat = golem.combat();
+        return new GolemData(golem.capabilities(), golem.traits(), golem.speed(),
+                new GolemCombat(combat.health() / partCount, combat.attack() / partCount, combat.armor() / partCount),
+                new GolemAppetite(golem.appetite().stomach() / partCount, golem.appetite().efficiency()), 0L);
     }
 
     public float min(GolemStat stat) {

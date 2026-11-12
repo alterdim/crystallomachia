@@ -76,13 +76,15 @@ public class DiscoBallRenderer implements BlockEntityRenderer<DiscoBallBlockEnti
                 golemState.addGeckolibData(GolemRenderer.PASS, pass);
                 passes.add(golemState);
             }
-            state.golems.add(new WorkstationRenderState.Golem(passes, x, y, z, yaw));
+            state.golems.add(new WorkstationRenderState.Golem(passes, x, y, z, yaw,
+                    WorkstationRenderState.nameOf(stack), discoBall.golemSpeech(slot), light));
         }
     }
 
     @Override
     public void submit(WorkstationRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
         for (WorkstationRenderState.Golem golem : state.golems) {
+            golem.submitTags(poseStack, collector, camera);
             poseStack.pushPose();
             poseStack.translate(golem.x(), golem.y(), golem.z());
             poseStack.rotateDegrees(Axis.YP, golem.yaw());

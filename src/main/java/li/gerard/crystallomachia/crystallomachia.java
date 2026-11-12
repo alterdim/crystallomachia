@@ -11,6 +11,7 @@ import li.gerard.crystallomachia.block.CoreExtractorBlockEntity;
 import li.gerard.crystallomachia.golem.GolemCoreItem;
 import li.gerard.crystallomachia.golem.GolemFoodItem;
 import li.gerard.crystallomachia.golem.GolemHunger;
+import li.gerard.crystallomachia.block.GolemPathNetwork;
 import li.gerard.crystallomachia.block.StoneDelicacyBlock;
 import li.gerard.crystallomachia.block.StoneDelicacyBlockEntity;
 import li.gerard.crystallomachia.recipe.CookingRecipe;
@@ -57,6 +58,8 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
@@ -161,6 +164,17 @@ public class crystallomachia {
     public static final DeferredItem<GolemFoodItem> COAL_DELICACY = ITEMS.registerItem("coal_delicacy", p -> new GolemFoodItem(40f, 1f, 0, p));
     public static final DeferredItem<GolemFoodItem> DIAMOND_DELICACY = ITEMS.registerItem("diamond_delicacy", p -> new GolemFoodItem(60f, 1.5f, 1200, p));
 
+    public static final DeferredBlock<Block> GOLEM_PATH = BLOCKS.registerSimpleBlock("golem_path",
+            p -> p.mapColor(MapColor.STONE).strength(1.5f, 6f));
+    public static final DeferredItem<BlockItem> GOLEM_PATH_ITEM = ITEMS.registerSimpleBlockItem("golem_path", GOLEM_PATH);
+    public static final DeferredBlock<SlabBlock> GOLEM_PATH_SLAB = BLOCKS.registerBlock("golem_path_slab", SlabBlock::new,
+            p -> p.mapColor(MapColor.STONE).strength(1.5f, 6f));
+    public static final DeferredItem<BlockItem> GOLEM_PATH_SLAB_ITEM = ITEMS.registerSimpleBlockItem("golem_path_slab", GOLEM_PATH_SLAB);
+    public static final DeferredBlock<StairBlock> GOLEM_PATH_STAIRS = BLOCKS.registerBlock("golem_path_stairs",
+            p -> new StairBlock(GOLEM_PATH.get().defaultBlockState(), p),
+            p -> p.mapColor(MapColor.STONE).strength(1.5f, 6f));
+    public static final DeferredItem<BlockItem> GOLEM_PATH_STAIRS_ITEM = ITEMS.registerSimpleBlockItem("golem_path_stairs", GOLEM_PATH_STAIRS);
+
     public static final Map<DyeColor, DeferredBlock<DancefloorBlock>> DANCEFLOORS = new EnumMap<>(DyeColor.class);
     public static final Map<DyeColor, DeferredItem<BlockItem>> DANCEFLOOR_ITEMS = new EnumMap<>(DyeColor.class);
 
@@ -203,6 +217,9 @@ public class crystallomachia {
                 output.accept(GolemCoreItem.create(GolemCoreItem.stats(3f, 12f, 4f, 4f, 60f, 2f)));
                 output.accept(GolemItem.create(new GolemData(Map.of(GolemCapability.FREEZING, 1), 7L)));
                 output.accept(GolemItem.create(new GolemData(Map.of(GolemCapability.STRENGTH, 1), 8L)));
+                output.accept(GOLEM_PATH_ITEM.get());
+                output.accept(GOLEM_PATH_SLAB_ITEM.get());
+                output.accept(GOLEM_PATH_STAIRS_ITEM.get());
                 output.accept(STONE_DELICACY_ITEM.get());
                 output.accept(COAL_DELICACY.get());
                 output.accept(DIAMOND_DELICACY.get());
@@ -268,6 +285,7 @@ public class crystallomachia {
         // Note that this is necessary if and only if we want *this* class (crystallomachia) to respond directly to events.
         // Do not add this line if there are no @SubscribeEvent-annotated functions in this class, like onServerStarting() below.
         NeoForge.EVENT_BUS.register(this);
+        NeoForge.EVENT_BUS.addListener(GolemPathNetwork::onBlockPlaced);
 
         // Register the item to a creative tab
         modEventBus.addListener(this::addCreative);

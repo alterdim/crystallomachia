@@ -14,6 +14,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.SlotAccess;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickAction;
@@ -96,6 +97,9 @@ public class GolemItem extends Item {
         }
         if (GolemHunger.feed(golem, meal)) {
             other.shrink(1);
+            if (player.level() instanceof ServerLevel level) {
+                GolemHunger.playEatEffects(level, player.position().add(0, 1, 0));
+            }
         }
         return true;
     }

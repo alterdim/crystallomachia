@@ -11,7 +11,9 @@ import com.lowdragmc.lowdraglib2.gui.texture.ColorRectTexture;
 import com.lowdragmc.lowdraglib2.gui.texture.SpriteTexture;
 import com.lowdragmc.lowdraglib2.gui.ui.ModularUI;
 import com.lowdragmc.lowdraglib2.gui.ui.UIElement;
+import com.lowdragmc.lowdraglib2.gui.ui.elements.Button;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.Label;
+import net.minecraft.world.item.ItemStack;
 import com.lowdragmc.lowdraglib2.gui.ui.elements.ScrollerView;
 import com.lowdragmc.lowdraglib2.gui.ui.event.HoverTooltips;
 import com.lowdragmc.lowdraglib2.gui.ui.event.UIEvents;
@@ -44,6 +46,8 @@ public class CoreExtractorBlockEntity extends AbstractWorkstationBlockEntity {
             GolemRole.of(GolemCapability.STRENGTH, 1));
     private static final int STAT_TEXT_WIDTH = 76;
 
+    private ItemStack confirmedGolem = ItemStack.EMPTY;
+
     public CoreExtractorBlockEntity(BlockPos pos, BlockState state) {
         super(crystallomachia.CORE_EXTRACTOR_BLOCK_ENTITY.get(), pos, state, GOLEM_ROLES, 2);
     }
@@ -65,14 +69,30 @@ public class CoreExtractorBlockEntity extends AbstractWorkstationBlockEntity {
         return this.level == null ? null : CoreExtraction.of(getStack(INPUT_SLOT), this.level.registryAccess());
     }
 
+    private boolean isConfirmed() {
+        return !this.confirmedGolem.isEmpty() && ItemStack.matches(this.confirmedGolem, getStack(INPUT_SLOT));
+    }
+
+    public void confirm() {
+        if (this.level != null && !this.level.isClientSide() && extraction() != null) {
+            this.confirmedGolem = getStack(INPUT_SLOT).copy();
+        }
+    }
+
     @Override
     protected void serverTick(ServerLevel level) {
+        if (!isConfirmed()) {
+            this.confirmedGolem = ItemStack.EMPTY;
+            resetProgress();
+            return;
+        }
         CoreExtraction extraction = workSpeed() <= 0 ? null : extraction();
         if (extraction == null || !getStack(OUTPUT_SLOT).isEmpty()) {
             resetProgress();
             return;
         }
         if (advanceProgress(WORK)) {
+            this.confirmedGolem = ItemStack.EMPTY;
             consume(INPUT_SLOT, 1);
             setStack(OUTPUT_SLOT, GolemCoreItem.create(extraction.roll(level.getRandom())));
         }
@@ -84,7 +104,8 @@ public class CoreExtractorBlockEntity extends AbstractWorkstationBlockEntity {
             @Override
             protected UIElement createMachineArea() {
                 return column(4).addChildren(
-                        row(4).addChildren(slot(INPUT_SLOT), progressArrow(), outputSlot(OUTPUT_SLOT)),
+                        row(4).addChildren(slot(INPUT_SLOT), progressArrow(), outputSlot(OUTPUT_SLOT),
+                                new Button().setText(Component.translatable("gui.crystallomachia.extract")).setOnServerClick(event -> confirm())),
                         createPreview());
             }
         }.build(holder.player);

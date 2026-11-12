@@ -7,7 +7,12 @@ import io.netty.buffer.ByteBuf;
 import li.gerard.crystallomachia.crystallomachia;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.phys.Vec3;
 
 public record GolemHunger(float food, float boost, int boostTicks) {
     public static final float FOOD_PER_WORK_TICK = 0.05f;
@@ -49,6 +54,15 @@ public record GolemHunger(float food, float boost, int boostTicks) {
         golem.set(crystallomachia.GOLEM_HUNGER.get(), new GolemHunger(food, hunger.boost, Math.max(0, hunger.boostTicks - ticks)));
     }
 
+    public static boolean wantsMeal(ItemStack golem, GolemFoodItem meal) {
+        if (!(golem.getItem() instanceof GolemItem) || !golem.has(crystallomachia.GOLEM_DATA.get())) {
+            return false;
+        }
+        float stomach = stomach(golem);
+        float missing = stomach - of(golem).food;
+        return missing > 0f && missing >= Math.min(meal.nourishment(), stomach);
+    }
+
     public static boolean feed(ItemStack golem, GolemFoodItem meal) {
         GolemHunger hunger = of(golem);
         float stomach = stomach(golem);
@@ -59,6 +73,11 @@ public record GolemHunger(float food, float boost, int boostTicks) {
         golem.set(crystallomachia.GOLEM_HUNGER.get(), new GolemHunger(Math.min(stomach, hunger.food + meal.nourishment()),
                 boosts ? meal.boost() : hunger.boost, boosts ? meal.boostTicks() : hunger.boostTicks));
         return true;
+    }
+
+    public static void playEatEffects(ServerLevel level, Vec3 position) {
+        level.sendParticles(ParticleTypes.HAPPY_VILLAGER, position.x, position.y, position.z, 12, 0.4, 0.6, 0.4, 0.0);
+        level.playSound(null, position.x, position.y, position.z, SoundEvents.GENERIC_EAT, SoundSource.NEUTRAL, 1f, 0.8f);
     }
 
     public boolean isFed() {

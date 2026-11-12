@@ -14,6 +14,7 @@ import li.gerard.crystallomachia.block.AbstractWorkstationBlock;
 import li.gerard.crystallomachia.block.AbstractWorkstationBlockEntity;
 import li.gerard.crystallomachia.golem.GolemAnchor;
 import li.gerard.crystallomachia.golem.GolemItem;
+import li.gerard.crystallomachia.golem.GolemPose;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
@@ -27,6 +28,9 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public class WorkstationRenderer implements BlockEntityRenderer<AbstractWorkstationBlockEntity, WorkstationRenderState> {
+    private static final double WALK_BOB_SPEED = 0.6;
+    private static final double WALK_BOB_HEIGHT = 0.08;
+
     private final GolemRenderer golemRenderer = new GolemRenderer();
 
     public WorkstationRenderer(BlockEntityRendererProvider.Context context) {
@@ -63,6 +67,13 @@ public class WorkstationRenderer implements BlockEntityRenderer<AbstractWorkstat
             double z = 0.5 - localX * sin + localZ * cos;
             double y = anchor.up();
             float yaw = facingYaw + anchor.yaw();
+            GolemPose pose = workstation.golemPose(slot, partialTick);
+            if (pose != null) {
+                x = pose.position().x - pos.getX();
+                z = pose.position().z - pos.getZ();
+                y = pose.position().y - pos.getY() + Math.abs(Math.sin((level.getGameTime() + partialTick) * WALK_BOB_SPEED)) * WALK_BOB_HEIGHT;
+                yaw = pose.yaw();
+            }
             visual.update(workstation.golem(slot), workstation.isWorking(), new Vec3(pos.getX() + x, pos.getY() + y, pos.getZ() + z), yaw);
 
             BlockPos lightPos = BlockPos.containing(pos.getX() + x, pos.getY() + y, pos.getZ() + z);
@@ -75,13 +86,15 @@ public class WorkstationRenderer implements BlockEntityRenderer<AbstractWorkstat
                 golemState.addGeckolibData(GolemRenderer.PASS, pass);
                 passes.add(golemState);
             }
-            state.golems.add(new WorkstationRenderState.Golem(passes, x, y, z, yaw));
+            state.golems.add(new WorkstationRenderState.Golem(passes, x, y, z, yaw,
+                    WorkstationRenderState.nameOf(workstation.getStack(slot)), workstation.golemSpeech(slot), light));
         }
     }
 
     @Override
     public void submit(WorkstationRenderState state, PoseStack poseStack, SubmitNodeCollector collector, CameraRenderState camera) {
         for (WorkstationRenderState.Golem golem : state.golems) {
+            golem.submitTags(poseStack, collector, camera);
             poseStack.pushPose();
             poseStack.translate(golem.x(), golem.y(), golem.z());
             poseStack.rotateDegrees(Axis.YP, golem.yaw());
@@ -94,7 +107,12 @@ public class WorkstationRenderer implements BlockEntityRenderer<AbstractWorkstat
 
     @Override
     public AABB getRenderBoundingBox(AbstractWorkstationBlockEntity workstation) {
-        return new AABB(workstation.getBlockPos()).inflate(2);
+        return new AABB(workstation.getBlockPos()).inflate(workstation.renderReach());
+    }
+
+    @Override
+    public boolean shouldRender(AbstractWorkstationBlockEntity workstation, Vec3 cameraPosition) {
+        return Vec3.atCenterOf(workstation.getBlockPos()).closerThan(cameraPosition, getViewDistance() + workstation.renderReach());
     }
 
     private static float facingYaw(Direction facing) {

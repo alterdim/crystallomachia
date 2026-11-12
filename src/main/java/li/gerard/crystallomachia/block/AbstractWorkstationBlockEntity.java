@@ -17,11 +17,14 @@ import li.gerard.crystallomachia.golem.GolemCapability;
 import li.gerard.crystallomachia.golem.GolemData;
 import li.gerard.crystallomachia.golem.GolemHunger;
 import li.gerard.crystallomachia.golem.GolemItem;
+import li.gerard.crystallomachia.golem.GolemPose;
+import org.jspecify.annotations.Nullable;
 import li.gerard.crystallomachia.golem.GolemRole;
 import li.gerard.crystallomachia.golem.GolemTrait;
 import li.gerard.crystallomachia.golem.WorkEffect;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
@@ -107,6 +110,17 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
         return this.progress > 0;
     }
 
+    public @Nullable Component golemSpeech(int slot) {
+        if (isStarving(slot)) {
+            return Component.translatable("speech.crystallomachia.hungry");
+        }
+        if (!isWorking() || !isRequired(slot)) {
+            return null;
+        }
+        List<GolemCapability> capabilities = golemRole(slot).capabilities();
+        return capabilities.isEmpty() ? null : Component.translatable("speech.crystallomachia.work." + capabilities.getFirst().getSerializedName());
+    }
+
     public List<WorkEffect> workEffects(int slot) {
         List<WorkEffect> effects = new ArrayList<>();
         for (GolemCapability capability : golemRole(slot).capabilities()) {
@@ -135,6 +149,20 @@ public abstract class AbstractWorkstationBlockEntity extends BlockEntity impleme
         double z = -right * Math.sin(angle) - front * Math.cos(angle);
         BlockPos pos = getBlockPos();
         return new Vec3(pos.getX() + 0.5 + x, pos.getY() + up, pos.getZ() + 0.5 + z);
+    }
+
+    public @Nullable GolemPose golemPose(int slot, float partialTick) {
+        return null;
+    }
+
+    public double renderReach() {
+        return 2;
+    }
+
+    public void playEatEffects(int slot) {
+        if (this.level instanceof ServerLevel serverLevel) {
+            GolemHunger.playEatEffects(serverLevel, effectPosition(slot, WorkEffect.Point.golem(0, 1.5, 0)));
+        }
     }
 
     public void clientTick() {
